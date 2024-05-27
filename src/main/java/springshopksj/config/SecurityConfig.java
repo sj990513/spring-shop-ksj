@@ -82,11 +82,14 @@ public class SecurityConfig {
                 .httpBasic((auth) -> auth.disable());
 
 
+        
+        //권한관련은 나중에한번더체크
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/login", "/", "/signup", "/reissue", "/signup/**", "/items", "/items/**").permitAll()
+                        .requestMatchers("/login", "/", "/signup", "/reissue", "/signup/**",
+                                "/items", "/items/{category}", "/items/item/{itemId}").permitAll()
                         .requestMatchers("/admin").hasRole("ADMIN")
-                        .anyRequest().authenticated());
+                        .anyRequest().hasAnyRole("USER", "ADMIN"));
 
         http
                 .addFilterBefore(new JWTFilter(jwtUtil), LoginFilter.class);
