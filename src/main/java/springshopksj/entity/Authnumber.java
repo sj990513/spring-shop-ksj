@@ -16,7 +16,7 @@ public class Authnumber {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long ID;
     private String phonenumber;
     private String code;
 
