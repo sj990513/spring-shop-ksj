@@ -1,6 +1,7 @@
 package springshopksj.dto;
 
 import lombok.*;
+import springshopksj.entity.Member;
 
 import java.time.LocalDateTime;
 
@@ -13,7 +14,7 @@ public class ItemDto {
 
     private long id;
 
-    private String itemName;
+    private String itemname;
 
     private int price;
 
@@ -27,6 +28,6 @@ public class ItemDto {
 
     private LocalDateTime createDate;
 
-    private Long memberId;
+    private MemberDto memberDto;
 
 }

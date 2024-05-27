@@ -4,13 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import springshopksj.dto.ItemDto;
+import springshopksj.dto.MemberDto;
 import springshopksj.entity.Item;
+import springshopksj.entity.Member;
 import springshopksj.repository.ItemRepository;
 import springshopksj.repository.MemberRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,26 +24,71 @@ import java.util.List;
 public class ItemService {
 
     private final ItemRepository itemRepository;
+    private final MemberRepository memberRepository;
     private final ModelMapper modelMapper;
 
 
-    //모든 아이템 조회
-    public List<ItemDto> findAllItems() {
+    //모든 아이템 조회 (페이징 처리)
+    public Page<ItemDto> findAllItems(Pageable pageable) {
 
-        List<Item> findItems = itemRepository.findAll();
-        
-        List<ItemDto> allItemsDto = modelMapper.map(findItems, new TypeToken<List<ItemDto>>() {}.getType());
+        Page<Item> findItems = itemRepository.findAll(pageable);
 
-        return allItemsDto;
+        return findItems.map(item -> modelMapper.map(item, ItemDto.class));
     }
 
-    //카테고리별 조회
-    public List<ItemDto> findByCategory(String category) {
+    //카테고리별 조회 (페이징 처리)
+    public Page<ItemDto> findByCategory(String category, Pageable pageable) {
 
-        List<Item> findByCategoryItemList = itemRepository.findByCategory(category);
+        Page<Item> findByCategory = itemRepository.findByCategory(category, pageable);
 
-        List<ItemDto> itemListDto = modelMapper.map(findByCategoryItemList, new TypeToken<List<ItemDto>>() {}.getType());
+        return findByCategory.map(item -> modelMapper.map(item, ItemDto.class));
+    }
 
-        return itemListDto;
+    //아이템 검색
+    public Page<ItemDto> searchItems(String keyword, Pageable pageable) {
+
+        Page<Item> findBySearch = itemRepository.findByItemnameContaining(keyword, pageable);
+
+        return findBySearch.map(item -> modelMapper.map(item, ItemDto.class));
+    }
+
+    //카테고리내에서 아이템검색
+    public Page<ItemDto> searchItemsByCategoryAndKeyword(String category, String keyword, Pageable pageable) {
+
+        Page<Item> findByCategoryAndSearch = itemRepository.findByCategoryAndItemnameContaining(category, keyword, pageable);
+
+        return findByCategoryAndSearch.map(item -> modelMapper.map(item, ItemDto.class));
+    }
+
+
+    //itemId로 아이템값 찾기
+    public ItemDto findById(long itemId) {
+
+        Item item = itemRepository.findById(itemId);
+
+        ItemDto itemDto = modelMapper.map(item, ItemDto.class);
+
+        return itemDto;
+    }
+
+    //아이템 추가
+    public String addItem(ItemDto itemDto, String username) {
+
+        Member member = memberRepository.findByUsername(username);
+
+        Item item = Item.builder()
+                .itemname(itemDto.getItemname())
+                .price(itemDto.getPrice())
+                .stock(itemDto.getStock())
+                .category(itemDto.getCategory())
+                .description(itemDto.getDescription())
+                .imageUrl(itemDto.getImageUrl())
+                .createDate(LocalDateTime.now())
+                .member(member)
+                .build();
+
+        itemRepository.save(item);
+
+        return "아이템 추가 성공";
     }
 }

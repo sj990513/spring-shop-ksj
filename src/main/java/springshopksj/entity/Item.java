@@ -19,10 +19,10 @@ public class Item {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private long ID;
 
     @Column(name = "itemname")
-    private String itemName;
+    private String itemname;
 
     @Column(name = "price")
     private int price;
