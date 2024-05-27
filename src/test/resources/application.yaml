@@ -1,0 +1,18 @@
+#테스트용 내장db
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: password  # Default password for H2
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop # Create and drop the schema for each test
+      dialect: org.hibernate.dialect.H2Dialect # Specify H2 dialect explicitly
+
+server:
+  port: 8080
