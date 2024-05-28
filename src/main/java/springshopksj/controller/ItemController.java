@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,8 @@ import springshopksj.entity.Item;
 import springshopksj.service.ItemService;
 import springshopksj.service.MemberService;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -76,19 +79,34 @@ public class ItemController {
         return new ResponseEntity<>(findItem, HttpStatus.OK);
     }
 
-    //아이템 추가, 권한관련해서 나중에 한번더 체크해보자
-    @PostMapping("/items/item/add")
+    //아이템 추가
+    @PostMapping("/items/add/add-item")
     public ResponseEntity<?> addItem(@RequestBody ItemDto itemDto) {
 
+        //현재 로그인중인 사용자
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         if (memberDto == null )
             return new ResponseEntity<>("권한이 없습니다.", HttpStatus.UNAUTHORIZED);
 
-        String message = itemService.addItem(itemDto, memberDto.getUsername());
+        String message = itemService.addItem(itemDto, memberDto);
 
         return new ResponseEntity<>(message, HttpStatus.OK);
     }
 
+    //상품삭제 (관리자나 작성자 본인만 가능)
+    @DeleteMapping("/items/item/{itemId}/delete-item")
+    public ResponseEntity<?> deleteItem(@PathVariable(name = "itemId") long itemId) {
+
+        //현재 로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        String message = itemService.deleteItem(itemId, memberDto);
+
+        if(message.equals("삭제성공"))
+            return new ResponseEntity<>(message, HttpStatus.OK);
+
+        return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
+    }
 }
 
 

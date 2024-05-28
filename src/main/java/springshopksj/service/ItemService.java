@@ -72,9 +72,9 @@ public class ItemService {
     }
 
     //아이템 추가
-    public String addItem(ItemDto itemDto, String username) {
+    public String addItem(ItemDto itemDto, MemberDto memberDto) {
 
-        Member member = memberRepository.findByUsername(username);
+        Member member = memberRepository.findByUsername(memberDto.getUsername());
 
         Item item = Item.builder()
                 .itemname(itemDto.getItemname())
@@ -90,5 +90,19 @@ public class ItemService {
         itemRepository.save(item);
 
         return "아이템 추가 성공";
+    }
+
+    public String deleteItem(long itemId, MemberDto memberDto) {
+
+        Item item = itemRepository.findById(itemId);
+        String role = String.valueOf(memberDto.getRole());
+
+        //글작성자나 관리자일경우 허용
+        if ( item.getMember().getID() == memberDto.getID() || role.equals("ROLE_ADMIN") ) {
+            itemRepository.delete(item);
+            return "삭제성공";
+        }
+
+        return "삭제할 권한이 없습니다.";
     }
 }
