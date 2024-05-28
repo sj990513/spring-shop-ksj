@@ -37,6 +37,7 @@ public class MemberService {
 
     //회원가입
     public String joinProcess(MemberDto memberDto) {
+
         Boolean checkUsername = memberRepository.existsByUsername(memberDto.getUsername());
         if (checkUsername)
             return "이미 존재하는 아이디 입니다.";
@@ -60,6 +61,23 @@ public class MemberService {
             memberRepository.save(member);
         }
         return "회원가입 성공";
+    }
+
+    //중복검사들
+    public Boolean checkUsername(String username) {
+        return memberRepository.existsByUsername(username);
+    }
+
+    public Boolean checkNickname(String nickname) {
+        return memberRepository.existsByNickname(nickname);
+    }
+
+    public Boolean checkEmail(String email) {
+        return memberRepository.existsByEmail(email);
+    }
+
+    public Boolean checkPhone(String phone) {
+        return memberRepository.existsByPhone(phone);
     }
 
     //모든 member 조회
@@ -125,5 +143,19 @@ public class MemberService {
         memberRepository.save(currentMember);
 
         return "업데이트 성공";
+    }
+
+    //회원 삭제
+    public String deleteUser(long userId, MemberDto memberDto) {
+
+        String role = String.valueOf(memberDto.getRole());
+
+        //회원 본인이거나 관리자일경우 허용
+        if ( memberDto.getID() == userId || role.equals("ROLE_ADMIN") ) {
+            memberRepository.delete(memberRepository.findById(userId));
+            return "삭제성공";
+        }
+
+        return "권한이 없습니다.";
     }
 }

@@ -29,18 +29,45 @@ public class MemberController {
 
     //회원가입
     @PostMapping("/signup")
-    public ResponseEntity<?> createUser(@RequestBody MemberDto memberDto){
-
+    public ResponseEntity<String> createUser(@RequestBody MemberDto memberDto) {
         String message = memberService.joinProcess(memberDto);
 
-        if (message.equals("회원가입 성공")) {
-            return new ResponseEntity<>(message, HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
+        switch (message) {
+            case "회원가입 성공":
+                return new ResponseEntity<>(message, HttpStatus.OK);
+            case "이미 존재하는 아이디 입니다.":
+            case "이미 존재하는 닉네임 입니다.":
+            case "이미 존재하는 이메일 입니다.":
+            case "이미 존재하는 핸드폰번호 입니다.":
+                return new ResponseEntity<>(message, HttpStatus.CONFLICT);
+            default:
+                return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
         }
     }
 
+    //아이디 중복검사
+    @GetMapping("/signup/check-username")
+    public ResponseEntity<Boolean> checkUsername(@RequestParam String username) {
+        return new ResponseEntity<>(memberService.checkUsername(username), HttpStatus.OK);
+    }
+
+    //닉네임 중복검사
+    @GetMapping("/signup/check-nickname")
+    public ResponseEntity<Boolean> checkNickname(@RequestParam String nickname) {
+        return new ResponseEntity<>(memberService.checkNickname(nickname), HttpStatus.OK);
+    }
+
+    //이메일 중복검사
+    @GetMapping("/signup/check-email")
+    public ResponseEntity<Boolean> checkEmail(@RequestParam String email) {
+        return new ResponseEntity<>(memberService.checkEmail(email), HttpStatus.OK);
+    }
+
+    //핸드폰 중복검사
+    @GetMapping("/signup/check-phone")
+    public ResponseEntity<Boolean> checkPhone(@RequestParam String phone) {
+        return new ResponseEntity<>(memberService.checkPhone(phone), HttpStatus.OK);
+    }
 
     @GetMapping("/admin")
     public ResponseEntity<?> admin() {
@@ -64,7 +91,7 @@ public class MemberController {
     }
 
     //마이페이지
-    @GetMapping("/userInfo/{userId}")
+    @GetMapping("/user-info/{userId}")
     public ResponseEntity<?> myPage(@PathVariable(name = "userId") long userId) {
 
         MemberDto memberDto = memberService.findById(userId);
@@ -73,7 +100,7 @@ public class MemberController {
     }
 
     //마이페이지 수정
-    @PatchMapping("/userInfo/{userId}/update")
+    @PatchMapping("/user-info/{userId}/update")
     public ResponseEntity<?> updateInfo(@PathVariable(name = "userId") long userId,
                                         @RequestBody MemberDto memberDto) {
         
@@ -86,5 +113,20 @@ public class MemberController {
         else {
             return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    //회원삭제
+    @DeleteMapping("/userInfo/{userId}/delete-user")
+    public ResponseEntity<?> deleteUser(@PathVariable(name = "userId") long userId) {
+
+        //현재 로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        String message = memberService.deleteUser(userId, memberDto);
+
+        if(message.equals("삭제성공"))
+            return new ResponseEntity<>(message, HttpStatus.OK);
+
+        return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
     }
 }
