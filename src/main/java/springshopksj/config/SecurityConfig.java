@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -86,7 +87,7 @@ public class SecurityConfig {
         //권한관련은 나중에한번더체크
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/login", "/", "/signup", "/reissue", "/signup/**",
+                        .requestMatchers("/login", "/", "/signup", "/signup/**", "/reissue",
                                 "/items", "/items/{category}", "/items/item/{itemId}").permitAll()
                         .requestMatchers("/admin").hasRole("ADMIN")
                         .anyRequest().hasAnyRole("USER", "ADMIN"));
