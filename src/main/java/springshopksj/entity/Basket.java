@@ -28,12 +28,12 @@ public class Basket {
     @Column(name = "createdate")
     private LocalDateTime createdate;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userID", referencedColumnName = "ID")
     private Member member;
 
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "itemID", referencedColumnName = "ID")
     private Item item;
 

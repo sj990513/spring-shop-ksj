@@ -35,7 +35,7 @@ public class Board {
     @Column(name = "modifydate")
     private LocalDateTime modifydate;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userID", referencedColumnName = "ID")
     private Member member;
 }

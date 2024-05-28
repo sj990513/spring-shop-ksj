@@ -43,7 +43,7 @@ public class Item {
     @Column(name = "createdate")
     private LocalDateTime createDate;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userID", referencedColumnName = "ID")
     private Member member;
 
