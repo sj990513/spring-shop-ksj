@@ -16,16 +16,23 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import springshopksj.dto.DeliveryDto;
 import springshopksj.dto.MemberDto;
+import springshopksj.dto.OrderItemDto;
+import springshopksj.dto.PaymentDto;
 import springshopksj.entity.Member;
+import springshopksj.entity.Order;
 import springshopksj.entity.RefreshToken;
 import springshopksj.repository.RefreshRepository;
 import springshopksj.service.MemberService;
+import springshopksj.service.OrderService;
 import springshopksj.service.RefreshTokenService;
 import springshopksj.utils.jwt.JWTUtil;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -33,8 +40,33 @@ import java.util.Iterator;
 public class MainController {
 
     private final MemberService memberService;
+    private final OrderService orderService;
+
     @GetMapping("/")
     public ResponseEntity<?> getUserInfo() {
+
+        OrderItemDto item1 = new OrderItemDto();
+        item1.setItemId(2); // 존재하는 itemId여야 합니다.
+        item1.setCount(2);
+
+        OrderItemDto item2 = new OrderItemDto();
+        item2.setItemId(3); // 존재하는 itemId여야 합니다.
+        item2.setCount(1);
+
+        List<OrderItemDto> orderItems = Arrays.asList(item1, item2);
+
+        // 배송 정보 예시 데이터
+        DeliveryDto deliveryDto = new DeliveryDto();
+        deliveryDto.setAddress("123 Main St, Anytown, USA");
+
+        // 결제 정보 예시 데이터
+        PaymentDto paymentDto = new PaymentDto();
+        paymentDto.setPaymentMethod("CREDIT_CARD");
+        paymentDto.setAmount(300); // 총 결제 금액 예시
+
+        Order order = orderService.createOrder(1, orderItems, deliveryDto, paymentDto);
+
+
 
         //username전달
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
