@@ -93,7 +93,9 @@ public class MemberService {
     //userID로 회원조회
     public MemberDto findById(long userId) {
 
-        Member findMember = memberRepository.findById(userId);
+        Member findMember = memberRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
         MemberDto memberDto = modelMapper.map(findMember, MemberDto.class);
 
         return memberDto;
@@ -106,7 +108,9 @@ public class MemberService {
         if(username.equals("anonymousUser"))
             return null;
 
-        Member findMember = memberRepository.findByUsername(username);
+        Member findMember = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
         MemberDto memberDto = modelMapper.map(findMember, MemberDto.class);
 
         return memberDto;
@@ -116,7 +120,9 @@ public class MemberService {
     public String updateUserInfo(long userId, MemberDto memberDto) {
 
         //일단 현재 사용자 정보 불러오고 업데이트할 필드가 현재 필드와 다른 경우에만 중복 검사를 수행
-        Member currentMember = memberRepository.findById(userId);
+        Member currentMember = memberRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
         LocalDateTime createDate = currentMember.getCreateDate();
         Member.Role role = currentMember.getRole();
 
@@ -146,16 +152,13 @@ public class MemberService {
     }
 
     //회원 삭제
-    public String deleteUser(long userId, MemberDto memberDto) {
+    public String deleteUser(MemberDto memberDto) {
 
-        String role = String.valueOf(memberDto.getRole());
 
-        //회원 본인이거나 관리자일경우 허용
-        if ( memberDto.getID() == userId || role.equals("ROLE_ADMIN") ) {
-            memberRepository.delete(memberRepository.findById(userId));
-            return "삭제성공";
-        }
+        Member member = memberRepository.findById(memberDto.getID())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
 
-        return "권한이 없습니다.";
+        memberRepository.delete(member);
+        return "삭제 성공";
     }
 }

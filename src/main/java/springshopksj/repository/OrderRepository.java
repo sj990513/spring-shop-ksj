@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 import springshopksj.entity.Basket;
 import springshopksj.entity.Order;
 
+import java.util.List;
+
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+    List<Order> findByMemberID(long userID);
 }

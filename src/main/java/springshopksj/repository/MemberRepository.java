@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import springshopksj.entity.Member;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long> { //extends JpaRepository<엔티티, pk타입>
@@ -16,8 +17,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> { //extend
     Boolean existsByNickname(String nickname);
     Boolean existsByEmail(String email);
     Boolean existsByPhone(String phone);
-
-    Member findByUsername(String username);
-    Member findById(long userId);
+    Optional<Member> findByUsername(String username);
 
 }

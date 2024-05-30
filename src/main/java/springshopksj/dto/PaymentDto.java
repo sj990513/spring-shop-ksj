@@ -1,8 +1,12 @@
 package springshopksj.dto;
 
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class PaymentDto {
     private String paymentMethod;
     private int amount;

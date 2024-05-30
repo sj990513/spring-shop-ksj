@@ -4,6 +4,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import springshopksj.dto.DeliveryDto;
+import springshopksj.dto.MemberDto;
 import springshopksj.dto.OrderItemDto;
 import springshopksj.dto.PaymentDto;
 import springshopksj.entity.*;
@@ -24,56 +25,143 @@ public class OrderService {
     private final PaymentRepository paymentRepository;
 
     @Transactional
-    public Order createOrder(long memberId, List<OrderItemDto> orderItems, DeliveryDto deliveryDto, PaymentDto paymentDto) {
-        Member member = memberRepository.findById(memberId);
+    public Order createOrder(MemberDto memberDto, List<OrderItemDto> orderItems, DeliveryDto deliveryDto, PaymentDto paymentDto) {
 
-        // 2. 주문 데이터 생성
-        Order order = new Order();
-        order.setMember(member);
-        order.setStatus(Order.OrderStatus.ORDERED);
-        order.setOrderdate(LocalDateTime.now());
+
+        // 주문 요청한 사용자 (현재 로그인한 사용자)
+        Member member = memberRepository.findById(memberDto.getID())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
+        // 주문 데이터 생성
+        Order order = Order.builder()
+                .member(member)
+                .status(Order.OrderStatus.ORDERED)
+                .orderdate(LocalDateTime.now())
+                .build();
 
         orderRepository.save(order);
 
 
-        // 3. 주문 항목 생성 및 재고 업데이트
+        // 주문 항목 생성 및 재고 업데이트
         for (OrderItemDto orderItemDto : orderItems) {
-            Item item = itemRepository.findById(orderItemDto.getItemId());
+            Item item = itemRepository.findById(orderItemDto.getItemId())
+                    .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
 
             if (item.getStock() < orderItemDto.getCount()) {
                 throw new RuntimeException("해당 상품의 재고가 남아있지 않습니다.: " + item.getItemname());
             }
 
-            OrderItem orderItem = new OrderItem();
-            orderItem.setOrder(order);
-            orderItem.setItem(item);
-            orderItem.setOrderprice(item.getPrice());
-            orderItem.setCount(orderItemDto.getCount());
+            OrderItem orderItem = OrderItem.builder()
+                    .order(order)
+                    .item(item)
+                    .orderprice(item.getPrice())
+                    .count(orderItemDto.getCount())
+                    .build();
 
             orderItemRepository.save(orderItem);
 
-            // 재고 감소
             item.setStock(item.getStock() - orderItemDto.getCount());
             itemRepository.save(item);
         }
 
-        // 4. 배송 정보 생성
-        Delivery delivery = new Delivery();
-        delivery.setOrder(order);
-        delivery.setStatus(Delivery.DeliveryStatus.READY);
-        delivery.setAddress(deliveryDto.getAddress());
+        // 배송 정보 생성
+        Delivery delivery = Delivery.builder()
+                .order(order)
+                .status(Delivery.DeliveryStatus.READY)
+                .address(deliveryDto.getAddress())
+                .build();
 
         deliveryRepository.save(delivery);
 
-        // 5. 결제 정보 생성
-        Payment payment = new Payment();
-        payment.setOrder(order);
-        payment.setPaymentmethod(paymentDto.getPaymentMethod());
-        payment.setAmount(paymentDto.getAmount());
-        payment.setPaymentdate(LocalDateTime.now());
+        // 결제 정보 생성
+        Payment payment = Payment.builder()
+                .order(order)
+                .paymentmethod(paymentDto.getPaymentMethod())
+                .amount(paymentDto.getAmount())
+                .paymentdate(LocalDateTime.now())
+                .build();
 
         paymentRepository.save(payment);
 
         return order;
+    }
+
+
+    public Order getOrderById(long orderId) {
+
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+    }
+
+    // userId로 order찾기
+    public List<Order> getOrdersByUserId(MemberDto memberDto) {
+
+        return orderRepository.findByMemberID(memberDto.getID());
+    }
+
+    // order캔슬
+    public void cancelOrder(long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+
+        if (order.getStatus() != Order.OrderStatus.ORDERED) {
+            throw new RuntimeException("주문 취소가 불가능합니다.");
+        }
+        order.setStatus(Order.OrderStatus.CANCELLED);
+        orderRepository.save(order);
+    }
+
+    // order status 업데이트
+    public void updateOrderStatus(long orderId, Order.OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+
+        order.setStatus(status);
+        orderRepository.save(order);
+    }
+
+    //order-item에 추가
+    public void addItemToOrder(long orderId, OrderItemDto orderItemDto) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+
+        Item item = itemRepository.findById(orderItemDto.getItemId())
+                .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
+
+        if (item.getStock() < orderItemDto.getCount()) {
+            throw new RuntimeException("상품[" + item.getItemname() + "]의 재고가 충분하지 않습니다.");
+        }
+
+        OrderItem orderItem = OrderItem.builder()
+                .order(order)
+                .item(item)
+                .orderprice(item.getPrice())
+                .count(orderItemDto.getCount())
+                .build();
+
+        orderItemRepository.save(orderItem);
+
+        // 재고 감소
+        item.setStock(item.getStock() - orderItemDto.getCount());
+        itemRepository.save(item);
+    }
+
+    // 주문 삭제
+    @Transactional
+    public void removeItemFromOrder(long orderId, Long itemId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+
+        OrderItem orderItem = orderItemRepository.findByOrderIDAndItemID(orderId, itemId)
+                .orElseThrow(() -> new RuntimeException("OrderItem을 찾을수 없습니다."));
+
+        orderItemRepository.delete(orderItem);
+
+        // 재고 복구
+        Item item = orderItem.getItem();
+        item.setStock(item.getStock() + orderItem.getCount());
+        itemRepository.save(item);
     }
 }

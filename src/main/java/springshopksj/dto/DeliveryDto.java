@@ -1,8 +1,12 @@
 package springshopksj.dto;
 
-import lombok.Data;
+import lombok.*;
 
-@Data
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class DeliveryDto {
     private String address;
 }

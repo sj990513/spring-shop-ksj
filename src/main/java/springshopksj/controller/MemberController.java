@@ -91,21 +91,25 @@ public class MemberController {
     }
 
     //마이페이지
-    @GetMapping("/user-info/{userId}")
-    public ResponseEntity<?> myPage(@PathVariable(name = "userId") long userId) {
-
-        MemberDto memberDto = memberService.findById(userId);
+    @GetMapping("/user-info/user")
+    public ResponseEntity<?> myPage() {
+        
+        //현재 로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
         return new ResponseEntity<>(memberDto, HttpStatus.OK);
     }
 
     //마이페이지 수정
-    @PatchMapping("/user-info/{userId}/update")
-    public ResponseEntity<?> updateInfo(@PathVariable(name = "userId") long userId,
-                                        @RequestBody MemberDto memberDto) {
+    @PatchMapping("/user-info/user/update")
+    public ResponseEntity<?> updateInfo(@RequestBody MemberDto requestMemberDto) {
+
+        //현재 로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         
-        //memberDto값은 바꾸든 바꾸지않든 기존의 모든값들이 전부 담기게 프론트에서 처리해주어야한다. (username, password, nickname, email, phone, address값들)
-        String message = memberService.updateUserInfo(userId, memberDto);
+        //requestMemberDto값은 바꾸든 바꾸지않든 기존의 모든값들이 전부 담기게 프론트에서 처리해주어야한다.
+        // (username, password, nickname, email, phone, address값들)
+        String message = memberService.updateUserInfo(memberDto.getID(), requestMemberDto);
 
         if (message.equals("업데이트 성공")) {
             return new ResponseEntity<>(message, HttpStatus.OK);
@@ -116,17 +120,12 @@ public class MemberController {
     }
 
     //회원삭제
-    @DeleteMapping("/userInfo/{userId}/delete-user")
-    public ResponseEntity<?> deleteUser(@PathVariable(name = "userId") long userId) {
+    @DeleteMapping("/userInfo/user/delete-user")
+    public ResponseEntity<?> deleteUser() {
 
         //현재 로그인중인 사용자
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        String message = memberService.deleteUser(userId, memberDto);
-
-        if(message.equals("삭제성공"))
-            return new ResponseEntity<>(message, HttpStatus.OK);
-
-        return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(memberService.deleteUser(memberDto), HttpStatus.OK);
     }
 }

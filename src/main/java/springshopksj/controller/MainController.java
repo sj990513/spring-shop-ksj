@@ -44,30 +44,6 @@ public class MainController {
 
     @GetMapping("/")
     public ResponseEntity<?> getUserInfo() {
-
-        OrderItemDto item1 = new OrderItemDto();
-        item1.setItemId(2); // 존재하는 itemId여야 합니다.
-        item1.setCount(2);
-
-        OrderItemDto item2 = new OrderItemDto();
-        item2.setItemId(3); // 존재하는 itemId여야 합니다.
-        item2.setCount(1);
-
-        List<OrderItemDto> orderItems = Arrays.asList(item1, item2);
-
-        // 배송 정보 예시 데이터
-        DeliveryDto deliveryDto = new DeliveryDto();
-        deliveryDto.setAddress("123 Main St, Anytown, USA");
-
-        // 결제 정보 예시 데이터
-        PaymentDto paymentDto = new PaymentDto();
-        paymentDto.setPaymentMethod("CREDIT_CARD");
-        paymentDto.setAmount(300); // 총 결제 금액 예시
-
-        Order order = orderService.createOrder(1, orderItems, deliveryDto, paymentDto);
-
-
-
         //username전달
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 

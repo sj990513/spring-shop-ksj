@@ -17,6 +17,7 @@ import springshopksj.repository.MemberRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -64,7 +65,8 @@ public class ItemService {
     //itemId로 아이템값 찾기
     public ItemDto findById(long itemId) {
 
-        Item item = itemRepository.findById(itemId);
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
 
         ItemDto itemDto = modelMapper.map(item, ItemDto.class);
 
@@ -74,7 +76,8 @@ public class ItemService {
     //아이템 추가
     public String addItem(ItemDto itemDto, MemberDto memberDto) {
 
-        Member member = memberRepository.findByUsername(memberDto.getUsername());
+        Member member = memberRepository.findByUsername(memberDto.getUsername())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
 
         Item item = Item.builder()
                 .itemname(itemDto.getItemname())
@@ -94,7 +97,9 @@ public class ItemService {
 
     public String deleteItem(long itemId, MemberDto memberDto) {
 
-        Item item = itemRepository.findById(itemId);
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
+
         String role = String.valueOf(memberDto.getRole());
 
         //글작성자나 관리자일경우 허용

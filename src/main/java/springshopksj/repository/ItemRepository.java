@@ -11,7 +11,6 @@ import java.util.List;
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
    Page<Item> findByCategory(String category, Pageable pageable);
-   Item findById(long itemId);
 
    //Containing이 Like검색 %{keyword}%
    Page<Item> findByItemnameContaining(String keyword, Pageable pageable);
