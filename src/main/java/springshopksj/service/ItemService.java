@@ -29,48 +29,52 @@ public class ItemService {
     private final ModelMapper modelMapper;
 
 
+    //itemDto맵핑위한  메소드(userId부분)
+    private ItemDto convertToDto(Item item) {
+        ItemDto itemDto = modelMapper.map(item, ItemDto.class);
+        itemDto.setUserID(item.getMember().getID());
+        return itemDto;
+    }
+
     //모든 아이템 조회 (페이징 처리)
     public Page<ItemDto> findAllItems(Pageable pageable) {
 
         Page<Item> findItems = itemRepository.findAll(pageable);
 
-        return findItems.map(item -> modelMapper.map(item, ItemDto.class));
+        return findItems.map(this::convertToDto);
     }
 
-    //카테고리별 조회 (페이징 처리)
+    // 카테고리별 조회 (페이징 처리)
     public Page<ItemDto> findByCategory(String category, Pageable pageable) {
 
         Page<Item> findByCategory = itemRepository.findByCategory(category, pageable);
 
-        return findByCategory.map(item -> modelMapper.map(item, ItemDto.class));
+        return findByCategory.map(this::convertToDto);
     }
 
-    //아이템 검색
+    // 아이템 검색
     public Page<ItemDto> searchItems(String keyword, Pageable pageable) {
 
         Page<Item> findBySearch = itemRepository.findByItemnameContaining(keyword, pageable);
 
-        return findBySearch.map(item -> modelMapper.map(item, ItemDto.class));
+        return findBySearch.map(this::convertToDto);
     }
 
-    //카테고리내에서 아이템검색
+    // 카테고리내에서 아이템 검색
     public Page<ItemDto> searchItemsByCategoryAndKeyword(String category, String keyword, Pageable pageable) {
 
         Page<Item> findByCategoryAndSearch = itemRepository.findByCategoryAndItemnameContaining(category, keyword, pageable);
 
-        return findByCategoryAndSearch.map(item -> modelMapper.map(item, ItemDto.class));
+        return findByCategoryAndSearch.map(this::convertToDto);
     }
 
-
-    //itemId로 아이템값 찾기
+    // itemId로 아이템값 찾기
     public ItemDto findById(long itemId) {
 
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
 
-        ItemDto itemDto = modelMapper.map(item, ItemDto.class);
-
-        return itemDto;
+        return convertToDto(item);
     }
 
     //아이템 추가

@@ -41,9 +41,9 @@ public class OrderController {
 
     // 특정 주문 조회
     @GetMapping("/orders/{orderId}")
-    public ResponseEntity<?> getOrder(@PathVariable long orderId) {
-        Order order = orderService.getOrderById(orderId);
-        return new ResponseEntity<>(order, HttpStatus.OK);
+    public ResponseEntity<?> getOrder(@PathVariable(name="orderId") Long orderId) {
+        OrderDto orderDto = orderService.getOrderById(orderId);
+        return new ResponseEntity<>(orderDto, HttpStatus.OK);
     }
 
     // 사용자별 주문내역 조회
@@ -51,27 +51,29 @@ public class OrderController {
     public ResponseEntity<?> getUserOrders() {
 
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-        List<Order> orders = orderService.getOrdersByUserId(memberDto);
+        List<OrderDto> orders = orderService.getOrdersByUserId(memberDto);
         return new ResponseEntity<>(orders, HttpStatus.OK);
     }
 
     // 주문취소
     @DeleteMapping("/orders/{orderId}/cancle")
-    public ResponseEntity<?> cancelOrder(@PathVariable long orderId) {
+    public ResponseEntity<?> cancelOrder(@PathVariable(name="orderId") Long orderId) {
         orderService.cancelOrder(orderId);
         return new ResponseEntity<>("주문취소", HttpStatus.OK);
     }
 
     // 주문상태 업데이트 (관리자가 주문 상태를 업데이트 ex) 주문 -> 배송 중으로 변경)
     @PatchMapping("/orders/{orderId}/status")
-    public ResponseEntity<?> updateOrderStatus(@PathVariable long orderId, @RequestBody OrderStatusUpdateRequest request) {
+    public ResponseEntity<?> updateOrderStatus(@PathVariable(name="orderId") Long orderId,
+                                               @RequestBody OrderStatusUpdateRequest request) {
         orderService.updateOrderStatus(orderId, request.getStatus());
         return new ResponseEntity<>( HttpStatus.OK);
     }
 
     // 주문아이템 추가
     @PostMapping("/orders/{orderId}/items/add")
-    public ResponseEntity<?> addItemToOrder(@PathVariable long orderId, @RequestBody OrderItemDto orderItemDto) {
+    public ResponseEntity<?> addItemToOrder(@PathVariable(name="orderId") Long orderId,
+                                            @RequestBody OrderItemDto orderItemDto) {
 
         orderService.addItemToOrder(orderId, orderItemDto);
 
@@ -80,7 +82,8 @@ public class OrderController {
 
     // 주문아이템 삭제
     @DeleteMapping("/orders/{orderId}/items/{itemId}/delete")
-    public ResponseEntity<?> removeItemFromOrder(@PathVariable long orderId, @PathVariable Long itemId) {
+    public ResponseEntity<?> removeItemFromOrder(@PathVariable(name="orderId") Long orderId,
+                                                 @PathVariable(name="itemId") Long itemId) {
         orderService.removeItemFromOrder(orderId, itemId);
         return new ResponseEntity<>("삭제 성공", HttpStatus.OK);
     }

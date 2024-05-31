@@ -28,6 +28,6 @@ public class ItemDto {
 
     private LocalDateTime createDate;
 
-    private MemberDto memberDto;
+    private long userID;
 
 }

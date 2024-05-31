@@ -2,16 +2,15 @@ package springshopksj.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
-import springshopksj.dto.DeliveryDto;
-import springshopksj.dto.MemberDto;
-import springshopksj.dto.OrderItemDto;
-import springshopksj.dto.PaymentDto;
+import springshopksj.dto.*;
 import springshopksj.entity.*;
 import springshopksj.repository.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -23,10 +22,13 @@ public class OrderService {
     private final MemberRepository memberRepository;
     private final DeliveryRepository deliveryRepository;
     private final PaymentRepository paymentRepository;
+    private final ModelMapper modelMapper;
 
     @Transactional
     public Order createOrder(MemberDto memberDto, List<OrderItemDto> orderItems, DeliveryDto deliveryDto, PaymentDto paymentDto) {
 
+        //order-item이 주문하나
+        //order-item들이 모여서 order(전체주문)
 
         // 주문 요청한 사용자 (현재 로그인한 사용자)
         Member member = memberRepository.findById(memberDto.getID())
@@ -87,16 +89,32 @@ public class OrderService {
     }
 
 
-    public Order getOrderById(long orderId) {
+    //OrderDTO로 반환
+    public OrderDto getOrderById(Long orderId) {
 
-        return orderRepository.findById(orderId)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+
+        OrderDto orderDto = modelMapper.map(order, OrderDto.class);
+        orderDto.setUserID(order.getMember().getID());
+
+        return  orderDto;
     }
 
     // userId로 order찾기
-    public List<Order> getOrdersByUserId(MemberDto memberDto) {
+    public List<OrderDto> getOrdersByUserId(MemberDto memberDto) {
 
-        return orderRepository.findByMemberID(memberDto.getID());
+        List<Order> orders = orderRepository.findByMemberID(memberDto.getID());
+
+        List<OrderDto> orderDtos = orders.stream().map(order -> {
+                    OrderDto orderDto = modelMapper.map(order, OrderDto.class);
+                    orderDto.setUserID(order.getMember().getID());
+                    return orderDto;
+                })
+                .collect(Collectors.toList());
+
+
+        return orderDtos;
     }
 
     // order캔슬
