@@ -29,6 +29,8 @@ public class Order {
 
     // 기타 주문 정보 필드
     public enum OrderStatus {
+
+        PENDING,     // 뵤류중 (장바구니)
         ORDERED,     // 주문 완료
         PAID,        // 결제 완료
         CANCELLED,   // 주문 취소

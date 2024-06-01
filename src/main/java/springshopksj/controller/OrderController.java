@@ -3,6 +3,7 @@ package springshopksj.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import springshopksj.dto.*;
 import springshopksj.entity.Member;
 import springshopksj.entity.Order;
+import springshopksj.entity.OrderItem;
 import springshopksj.service.MemberService;
 import springshopksj.service.OrderService;
 
@@ -22,31 +24,105 @@ public class OrderController {
     private final OrderService orderService;
     private final MemberService memberService;
 
-    // 주문
-    @PostMapping("/orders/create")
-    public ResponseEntity<?> createOrder(@RequestBody OrderRequest orderRequest ) {
+
+    // 장바구니 조회
+    @GetMapping("/orders/cart")
+    public ResponseEntity<?> userCart() {
+        //로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        List<OrderItemDto> orderItemDtos  = orderService.findAllCart(memberDto);
+
+        return new ResponseEntity<>(orderItemDtos, HttpStatus.OK);
+
+    }
+
+    // 장바구니 품목 추가(생성)
+
+    /** orderRequest
+     * {
+     *     "orderItems": [
+     *         {
+     *             "itemId": 3,
+     *             "count": 3
+     *         },
+     *         {
+     *             "itemId": 67,
+     *             "count": 1
+     *         }
+     *     ]
+     */
+    @PostMapping("/orders/cart/add-cart")
+    public ResponseEntity<?> createCart(@RequestBody OrderRequest orderRequest) {
+        //로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        List<OrderItemDto> orderItemDtos  = orderService.addCart(memberDto, orderRequest.getOrderItems());
+
+        return new ResponseEntity<>(orderItemDtos, HttpStatus.OK);
+    }
+
+    // 장바구니 품목 삭제
+    @DeleteMapping("qwer")
+    public ResponseEntity<?> deleteCart(@RequestBody OrderRequest orderRequest) {
+
+        // 로직만들기
+        
+        return new ResponseEntity<>( HttpStatus.OK);
+    }
+    
+    // 장바구니에서 주문
+    @PostMapping("/orders/cart/create")
+    public ResponseEntity<?> orderFromCart(@RequestBody OrderRequest orderRequest) {
+        //로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        OrderDto orderDto  = orderService.createOrderFromCart(memberDto, orderRequest.getDeliveryDto(), orderRequest.getPaymentDto());
+
+        return new ResponseEntity<>(orderDto, HttpStatus.OK);
+    }
+
+
+    // 아이템 디테일에서 즉시 주문
+
+    /**
+     *
+     * {
+     *     "orderItems": [
+     *         {
+     *             "itemID": 3,
+     *             "count": 3
+     *         },
+     *         {
+     *             "itemID": 67,
+     *             "count": 1
+     *         }
+     *     ],
+     *     "deliveryDto": {
+     *         "address": "123 Main St, Anytown, USA"
+     *     },
+     *     "paymentDto": {
+     *         "paymentMethod": "CREDIT_CARD",
+     *         "amount": 300
+     *     }
+     * }
+     */
+    @PostMapping("/orders/order-now")
+    public ResponseEntity<?> orderNow(@RequestBody OrderRequest orderRequest) {
 
         //로그인중인 사용자
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        Order order = orderService.createOrder(memberDto, orderRequest.getOrderItems(), orderRequest.getDeliveryDto(), orderRequest.getPaymentDto());
+        OrderDto orderDto = orderService.createOrder(memberDto, orderRequest.getOrderItems(), orderRequest.getDeliveryDto(), orderRequest.getPaymentDto());
 
-        return new ResponseEntity<>(order, HttpStatus.OK);
-    }
-
-
-    //order-item이 주문하나
-    //order-item들이 모여서 order(전체주문)
-
-
-    // 특정 주문 조회
-    @GetMapping("/orders/{orderId}")
-    public ResponseEntity<?> getOrder(@PathVariable(name="orderId") Long orderId) {
-        OrderDto orderDto = orderService.getOrderById(orderId);
         return new ResponseEntity<>(orderDto, HttpStatus.OK);
     }
+    
+    //6.1 여까지함ㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁ
 
-    // 사용자별 주문내역 조회
+
+
+    // 로그인한 사용자 주문내역 조회
     @GetMapping("/orders/user")
     public ResponseEntity<?> getUserOrders() {
 
@@ -55,8 +131,17 @@ public class OrderController {
         return new ResponseEntity<>(orders, HttpStatus.OK);
     }
 
-    // 주문취소
-    @DeleteMapping("/orders/{orderId}/cancle")
+
+    // 특정 주문 조회 (관리자페이지에서 사용)
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<?> getOrder(@PathVariable(name="orderId") Long orderId) {
+        OrderDto orderDto = orderService.getOrderById(orderId);
+        return new ResponseEntity<>(orderDto, HttpStatus.OK);
+    }
+
+
+    // 주문취소 (관리자페이지에서 사용)
+    @PatchMapping("/orders/{orderId}/cancle")
     public ResponseEntity<?> cancelOrder(@PathVariable(name="orderId") Long orderId) {
         orderService.cancelOrder(orderId);
         return new ResponseEntity<>("주문취소", HttpStatus.OK);
@@ -67,9 +152,15 @@ public class OrderController {
     public ResponseEntity<?> updateOrderStatus(@PathVariable(name="orderId") Long orderId,
                                                @RequestBody OrderStatusUpdateRequest request) {
         orderService.updateOrderStatus(orderId, request.getStatus());
-        return new ResponseEntity<>( HttpStatus.OK);
+        return new ResponseEntity<>("변경완료", HttpStatus.OK);
     }
 
+
+
+
+
+
+    // 보고 쓸지 안쓸지 결정할거
     // 주문아이템 추가
     @PostMapping("/orders/{orderId}/items/add")
     public ResponseEntity<?> addItemToOrder(@PathVariable(name="orderId") Long orderId,
