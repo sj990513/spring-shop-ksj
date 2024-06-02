@@ -118,10 +118,9 @@ public class OrderController {
         return new ResponseEntity<>(orderDto, HttpStatus.OK);
     }
     
-    //6.1 여까지함ㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁㅁ
-
-
-
+    
+    
+    // 여기부터 ㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱㄱ
     // 로그인한 사용자 주문내역 조회
     @GetMapping("/orders/user")
     public ResponseEntity<?> getUserOrders() {
