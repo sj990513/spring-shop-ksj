@@ -77,6 +77,27 @@ public class ItemService {
         return convertToDto(item);
     }
 
+    public ItemDto updateItem(long itemId, ItemDto updateItemDto, MemberDto memberDto) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
+
+        // 작성자 본인만 아이템 디테일 수정가능
+        if ( item.getMember().getID() == memberDto.getID() ) {
+
+            item.setItemname(updateItemDto.getItemname());
+            item.setPrice(updateItemDto.getPrice());
+            item.setStock(updateItemDto.getStock());
+            item.setCategory(updateItemDto.getCategory());
+            item.setDescription(updateItemDto.getDescription());
+            item.setImageUrl(updateItemDto.getImageUrl());
+
+            itemRepository.save(item);
+            return convertToDto(item);
+        } else {
+            throw new RuntimeException("상품을 수정할 권한이 없습니다.");
+        }
+    }
+
     //아이템 추가
     public String addItem(ItemDto itemDto, MemberDto memberDto) {
 

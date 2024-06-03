@@ -79,19 +79,20 @@ public class ItemController {
         return new ResponseEntity<>(findItem, HttpStatus.OK);
     }
 
-    //아이템 추가
-    @PostMapping("/items/add/add-item")
-    public ResponseEntity<?> addItem(@RequestBody ItemDto itemDto) {
+    // 아이템  수정 메소드
+
+    @PatchMapping("/items/item/{itemId}/update")
+    public ResponseEntity<?> updateItem(@PathVariable(name = "itemId") long itemId,
+                                        @RequestBody ItemDto itemDto) {
 
         //현재 로그인중인 사용자
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-        if (memberDto == null )
-            return new ResponseEntity<>("권한이 없습니다.", HttpStatus.UNAUTHORIZED);
 
-        String message = itemService.addItem(itemDto, memberDto);
+        ItemDto updateItem = itemService.updateItem(itemId, itemDto, memberDto);
 
-        return new ResponseEntity<>(message, HttpStatus.OK);
+        return new ResponseEntity<>(updateItem, HttpStatus.OK);
     }
+
 
     //상품삭제 (관리자나 작성자 본인만 가능)
     @DeleteMapping("/items/item/{itemId}/delete-item")
@@ -107,6 +108,23 @@ public class ItemController {
 
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
     }
+
+    //아이템 추가
+    @PostMapping("/items/add/add-item")
+    public ResponseEntity<?> addItem(@RequestBody ItemDto itemDto) {
+
+        //현재 로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+        if (memberDto == null )
+            return new ResponseEntity<>("권한이 없습니다.", HttpStatus.UNAUTHORIZED);
+
+        String message = itemService.addItem(itemDto, memberDto);
+
+        return new ResponseEntity<>(message, HttpStatus.OK);
+    }
+
+
+
 }
 
 
