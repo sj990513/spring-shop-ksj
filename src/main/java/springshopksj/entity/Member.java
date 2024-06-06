@@ -26,19 +26,15 @@ public class Member {
     private long ID;
 
     @Column(name = "username")
-    @NotBlank(message = "사용자 이름은 필수입니다.")
     private String username;
 
     @Column(name = "password")
-    @NotBlank(message = "패스워드는 필수입니다.")
-    @Size(min = 8, message = "패스워드는 최소 8자 이상입니다.")
     private String password;
 
     @Column(name = "nickname")
     private String nickname;
 
     @Column(name = "email")
-    @Email(message = "Email은 중복되면 안됩니다.")
     private String email;
 
     @Column(name = "phone")

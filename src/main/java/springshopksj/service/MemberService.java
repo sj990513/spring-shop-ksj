@@ -1,10 +1,14 @@
 package springshopksj.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.springframework.cglib.core.Local;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import springshopksj.dto.CustomUserDetails;
@@ -18,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,26 +85,46 @@ public class MemberService {
         return memberRepository.existsByPhone(phone);
     }
 
-    //모든 member 조회
-    public List<MemberDto> findAllMembers() {
-        List<Member> findMembers = memberRepository.findAll();
 
-        List<MemberDto> allMembersDto = modelMapper.map(findMembers, new TypeToken<List<MemberDto>>() {}.getType());
+    //모든 member 조회 - 페이징처리
+    public Page<MemberDto> findAllMembers(Pageable pageable) {
 
-        return allMembersDto;
+        Page<Member> allMembers = memberRepository.findAll(pageable);
+
+        return allMembers.map(member -> modelMapper.map(member, MemberDto.class));
+    }
+
+    // 모든 member 검색어 포함 조회 - 페이징처리
+    public Page<MemberDto> findAllBySearch(String keyword, Pageable pageable) {
+
+        Page<Member> findBySearch = memberRepository.findByUsernameContaining(keyword, pageable);
+
+        return findBySearch.map(member -> modelMapper.map(member, MemberDto.class));
     }
 
 
-    //userID로 회원조회
+    // userID로 회원조회
     public MemberDto findById(long userId) {
 
         Member findMember = memberRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
 
-        MemberDto memberDto = modelMapper.map(findMember, MemberDto.class);
-
-        return memberDto;
+        return modelMapper.map(findMember, MemberDto.class);
     }
+
+    // 권한 업데이트
+    public MemberDto updateRole(long userId, MemberDto memberDto) {
+
+        Member findMember = memberRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
+        findMember.setRole(memberDto.getRole());
+
+        Member updateMember = memberRepository.save(findMember);
+
+        return modelMapper.map(updateMember, MemberDto.class);
+    }
+
 
 
     //username으로 회원조회
@@ -111,9 +136,7 @@ public class MemberService {
         Member findMember = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
 
-        MemberDto memberDto = modelMapper.map(findMember, MemberDto.class);
-
-        return memberDto;
+        return  modelMapper.map(findMember, MemberDto.class);
     }
 
     // 회원 정보 업데이트

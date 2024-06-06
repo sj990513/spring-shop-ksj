@@ -40,7 +40,6 @@ import java.util.List;
 public class MainController {
 
     private final MemberService memberService;
-    private final OrderService orderService;
 
     @GetMapping("/")
     public ResponseEntity<?> getUserInfo() {

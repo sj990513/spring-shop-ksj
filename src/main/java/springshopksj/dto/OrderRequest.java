@@ -10,6 +10,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OrderRequest {
+    private OrderDto orderDto;
     private List<OrderItemDto> orderItems;
     private DeliveryDto deliveryDto;
     private PaymentDto paymentDto;

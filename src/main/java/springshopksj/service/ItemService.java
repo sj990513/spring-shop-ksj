@@ -53,7 +53,7 @@ public class ItemService {
     }
 
     // 아이템 검색
-    public Page<ItemDto> searchItems(String keyword, Pageable pageable) {
+    public Page<ItemDto> findBySearch(String keyword, Pageable pageable) {
 
         Page<Item> findBySearch = itemRepository.findByItemnameContaining(keyword, pageable);
 
@@ -120,6 +120,7 @@ public class ItemService {
         return "아이템 추가 성공";
     }
 
+    // 아이템삭제
     public String deleteItem(long itemId, MemberDto memberDto) {
 
         Item item = itemRepository.findById(itemId)

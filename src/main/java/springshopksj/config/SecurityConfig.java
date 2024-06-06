@@ -87,9 +87,8 @@ public class SecurityConfig {
         //권한관련은 나중에한번더체크
         http
                 .authorizeHttpRequests((auth) -> auth
-                        .requestMatchers("/login", "/", "/signup", "/signup/**", "/reissue",
-                                "/items", "/items/{category}", "/items/item/{itemId}").permitAll()
-                        .requestMatchers("/admin").hasRole("ADMIN")
+                        .requestMatchers("/login", "/", "/signup", "/signup/**", "/reissue", "/items/item-list/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().hasAnyRole("USER", "ADMIN"));
 
         http

@@ -28,6 +28,17 @@ public class MemberController {
     private final MemberService memberService;
 
     //회원가입
+    /**
+     * memberDto
+     *{
+     *     "username": "example",
+     *     "password": "example",
+     *     "nickname": "example",
+     *     "email": "example@example.com",
+     *     "phone": "01012345678",
+     *     "address": "example"
+     * }
+     */
     @PostMapping("/signup")
     public ResponseEntity<String> createUser(@RequestBody MemberDto memberDto) {
         String message = memberService.joinProcess(memberDto);
@@ -69,27 +80,6 @@ public class MemberController {
         return new ResponseEntity<>(memberService.checkPhone(phone), HttpStatus.OK);
     }
 
-    @GetMapping("/admin")
-    public ResponseEntity<?> admin() {
-
-        //현재 사용자 권한 불러오기
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-        Iterator<? extends GrantedAuthority> iter = authorities.iterator();
-        GrantedAuthority auth = iter.next();
-        String role = auth.getAuthority();
-
-        if (role.equals("ROLE_ADMIN")) {
-            List<MemberDto> allMembers = memberService.findAllMembers();
-
-            //나중에 관리자 페이지에 필요할것들 전달
-            return new ResponseEntity<>(allMembers, HttpStatus.OK);
-        }
-
-
-        return new ResponseEntity<>("권한이 없습니다.", HttpStatus.UNAUTHORIZED);
-    }
-
     //마이페이지
     @GetMapping("/user-info/user")
     public ResponseEntity<?> myPage() {
@@ -101,15 +91,26 @@ public class MemberController {
     }
 
     //마이페이지 수정
+    /**
+     * memberDto
+     *{
+     *     "username": "example",
+     *     "password": "example",
+     *     "nickname": "example",
+     *     "email": "example@example.com",
+     *     "phone": "01012345678",
+     *     "address": "example"
+     * }
+     */
     @PatchMapping("/user-info/user/update")
-    public ResponseEntity<?> updateInfo(@RequestBody MemberDto requestMemberDto) {
+    public ResponseEntity<?> updateInfo(@RequestBody MemberDto memberDto) {
 
         //현재 로그인중인 사용자
-        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+        MemberDto loginUser = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         
         //requestMemberDto값은 바꾸든 바꾸지않든 기존의 모든값들이 전부 담기게 프론트에서 처리해주어야한다.
         // (username, password, nickname, email, phone, address값들)
-        String message = memberService.updateUserInfo(memberDto.getID(), requestMemberDto);
+        String message = memberService.updateUserInfo(loginUser.getID(), memberDto);
 
         if (message.equals("업데이트 성공")) {
             return new ResponseEntity<>(message, HttpStatus.OK);

@@ -40,6 +40,18 @@ public class OrderService {
         return orderDto;
     }
 
+    private DeliveryDto convertToDeliveryDto(Delivery delivery) {
+        DeliveryDto deliveryDto = modelMapper.map(delivery, DeliveryDto.class);
+        deliveryDto.setOrderID(delivery.getOrder().getID());
+        return deliveryDto;
+    }
+
+    private PaymentDto convertToPaymentDto(Payment payment) {
+        PaymentDto paymentDto = modelMapper.map(payment, PaymentDto.class);
+        paymentDto.setOrderID(payment.getOrder().getID());
+        return paymentDto;
+    }
+
 
     // 장바구니 조회
     public List<OrderItemDto> findAllCart(MemberDto memberDto) {
@@ -294,8 +306,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
 
-        OrderDto orderDto = modelMapper.map(order, OrderDto.class);
-        orderDto.setUserID(order.getMember().getID());
+        OrderDto orderDto = convertToOrderDto(order);
 
         return  orderDto;
     }
@@ -315,6 +326,40 @@ public class OrderService {
 
         return orderDtos;
     }
+
+    // orderId로 모든 order 디테일 찾기 (order, orderItems, payment, delivery)
+    public OrderRequest findOrderDetailByOrderId(MemberDto memberDto, long orderId) {
+
+        String message = "주문에 해당하는 상세정보를 찾을수 없습니다.";
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException(message));
+
+        if (order.getMember().getID() != memberDto.getID())
+            throw new RuntimeException("해당 주문조회의 권한이 없습니다.");
+
+        List<OrderItem> orderItems = orderItemRepository.findByOrderID(orderId);
+
+
+        Payment payment = paymentRepository.findByOrderID(orderId)
+                .orElseThrow(() -> new RuntimeException(message));
+
+        Delivery delivery = deliveryRepository.findByOrderID(orderId)
+                .orElseThrow(() -> new RuntimeException(message));
+
+        OrderRequest orderRequest = OrderRequest.builder()
+                .orderDto(convertToOrderDto(order))
+                .orderItems(orderItems.stream().map(this::convertToOrderItemDto).collect(Collectors.toList()))
+                .paymentDto(convertToPaymentDto(payment))
+                .deliveryDto(convertToDeliveryDto(delivery))
+                .build();
+
+        return orderRequest;
+    }
+
+
+
+
 
     // order캔슬 (사용자가 요청)
     public void cancelOrder(long orderId) {

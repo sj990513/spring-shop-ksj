@@ -6,41 +6,37 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import springshopksj.dto.ItemDto;
 import springshopksj.dto.MemberDto;
-import springshopksj.entity.Item;
 import springshopksj.service.ItemService;
 import springshopksj.service.MemberService;
+import springshopksj.utils.Constants;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+@RequestMapping("/items")
 public class ItemController {
 
     private final ItemService itemService;
     private final MemberService memberService;
-    private static final int PAGE_SIZE = 10; // 페이지당 아이템개수 = 10
 
-    //전체 아이템목록 조회 (페이징 처리), 검색어 존재할시 검색된 아이템들만 전달
-    @GetMapping("/items")
+    //전체 아이템목록 조회 (페이징 처리), 검색어 존재할시 검색된 아이템들만 전달 - 로그인 불필요
+    /**
+     * http://localhost:8080/items/item-list?page=3&search=example
+     */
+    @GetMapping("/item-list")
     public ResponseEntity<?> allItems(@RequestParam(value = "page", defaultValue = "1") int page,
                                       @RequestParam(value = "search", required = false) String search) {
 
-        PageRequest pageable = PageRequest.of(page-1 , PAGE_SIZE);
+        PageRequest pageable = PageRequest.of(page-1 , Constants.PAGE_SIZE);
 
         //검색어 존재할시
         if (search != null) {
-            Page<ItemDto> findBySearch = itemService.searchItems(search, pageable);
+            Page<ItemDto> findBySearch = itemService.findBySearch(search, pageable);
             return new ResponseEntity<>(findBySearch, HttpStatus.OK);
         }
 
@@ -50,13 +46,17 @@ public class ItemController {
         return new ResponseEntity<>(allItemList, HttpStatus.OK);
     }
 
-    //카테고리별 아이템 조회 (페이징 처리)
-    @GetMapping("/items/{category}")
+    //카테고리별 아이템 조회 (페이징 처리) - 로그인 불필요
+    /**
+     * http://localhost:8080/items/item-list/pants?page=3&search=example
+     * category : top, pants, cap, shoes
+     */
+    @GetMapping("/item-list/{category}")
     public ResponseEntity<?> findByCategoryItemList(@PathVariable(name = "category") String category,
                                                     @RequestParam(value = "search", required = false) String search,
                                                     @RequestParam(value = "page", defaultValue = "1") int page) {
 
-        PageRequest pageable = PageRequest.of(page-1 , PAGE_SIZE);
+        PageRequest pageable = PageRequest.of(page-1 , Constants.PAGE_SIZE);
 
         //검색어 존재할시
         if (search != null) {
@@ -69,9 +69,35 @@ public class ItemController {
         return new ResponseEntity<>(findByCategory, HttpStatus.OK);
     }
 
+    //아이템 추가 - 로그인필요
+    /**
+     * itemDto
+     * {
+     *     "itemname": "Example 관리자",
+     *     "price": 100,
+     *     "stock": 50,
+     *     "category": "top",
+     *     "description": "This is an example item.",
+     *     "imageUrl": "http://example.com/image.jpg"
+     * }
+     */
+    @PostMapping("/add-item")
+    public ResponseEntity<?> addItem(@RequestBody ItemDto itemDto) {
 
-    //아이템 상세보기
-    @GetMapping("/items/item/{itemId}")
+        //현재 로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        String message = itemService.addItem(itemDto, memberDto);
+
+        return new ResponseEntity<>(message, HttpStatus.OK);
+    }
+
+
+    //아이템 상세보기 - 로그인필요
+    /**
+     * http://localhost:8080/items/3
+     */
+    @GetMapping("/{itemId}")
     public ResponseEntity<?> itemDetail(@PathVariable(name = "itemId") long itemId) {
 
         ItemDto findItem = itemService.findById(itemId);
@@ -79,9 +105,21 @@ public class ItemController {
         return new ResponseEntity<>(findItem, HttpStatus.OK);
     }
 
-    // 아이템  수정 메소드
-
-    @PatchMapping("/items/item/{itemId}/update")
+    // 아이템 수정 - 로그인필요
+    /**
+     * http://localhost:8080/items/3/update
+     *
+     * itemDto
+     * {
+     *     "itemname": "Example 관리자",
+     *     "price": 100,
+     *     "stock": 50,
+     *     "category": "top",
+     *     "description": "This is an example item.",
+     *     "imageUrl": "http://example.com/image.jpg"
+     * }
+     */
+    @PatchMapping("/{itemId}/update")
     public ResponseEntity<?> updateItem(@PathVariable(name = "itemId") long itemId,
                                         @RequestBody ItemDto itemDto) {
 
@@ -94,8 +132,21 @@ public class ItemController {
     }
 
 
-    //상품삭제 (관리자나 작성자 본인만 가능)
-    @DeleteMapping("/items/item/{itemId}/delete-item")
+    // 상품삭제 - 로그인필요 (작성자 본인만 삭제가능)
+    /**
+     * http://localhost:8080/items/3/delete-item
+     *
+     * itemDto
+     * {
+     *     "itemname": "Example 관리자",
+     *     "price": 100,
+     *     "stock": 50,
+     *     "category": "top",
+     *     "description": "This is an example item.",
+     *     "imageUrl": "http://example.com/image.jpg"
+     * }
+     */
+    @DeleteMapping("/{itemId}/delete-item")
     public ResponseEntity<?> deleteItem(@PathVariable(name = "itemId") long itemId) {
 
         //현재 로그인중인 사용자
@@ -108,22 +159,6 @@ public class ItemController {
 
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
     }
-
-    //아이템 추가
-    @PostMapping("/items/add/add-item")
-    public ResponseEntity<?> addItem(@RequestBody ItemDto itemDto) {
-
-        //현재 로그인중인 사용자
-        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
-        if (memberDto == null )
-            return new ResponseEntity<>("권한이 없습니다.", HttpStatus.UNAUTHORIZED);
-
-        String message = itemService.addItem(itemDto, memberDto);
-
-        return new ResponseEntity<>(message, HttpStatus.OK);
-    }
-
-
 
 }
 
