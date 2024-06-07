@@ -30,7 +30,7 @@ public class ItemService {
 
 
     //itemDto맵핑위한  메소드(userId부분)
-    private ItemDto convertToDto(Item item) {
+    private ItemDto convertToItemDto(Item item) {
         ItemDto itemDto = modelMapper.map(item, ItemDto.class);
         itemDto.setUserID(item.getMember().getID());
         return itemDto;
@@ -41,7 +41,7 @@ public class ItemService {
 
         Page<Item> findItems = itemRepository.findAll(pageable);
 
-        return findItems.map(this::convertToDto);
+        return findItems.map(this::convertToItemDto);
     }
 
     // 카테고리별 조회 (페이징 처리)
@@ -49,7 +49,7 @@ public class ItemService {
 
         Page<Item> findByCategory = itemRepository.findByCategory(category, pageable);
 
-        return findByCategory.map(this::convertToDto);
+        return findByCategory.map(this::convertToItemDto);
     }
 
     // 아이템 검색
@@ -57,7 +57,7 @@ public class ItemService {
 
         Page<Item> findBySearch = itemRepository.findByItemnameContaining(keyword, pageable);
 
-        return findBySearch.map(this::convertToDto);
+        return findBySearch.map(this::convertToItemDto);
     }
 
     // 카테고리내에서 아이템 검색
@@ -65,7 +65,7 @@ public class ItemService {
 
         Page<Item> findByCategoryAndSearch = itemRepository.findByCategoryAndItemnameContaining(category, keyword, pageable);
 
-        return findByCategoryAndSearch.map(this::convertToDto);
+        return findByCategoryAndSearch.map(this::convertToItemDto);
     }
 
     // itemId로 아이템값 찾기
@@ -74,7 +74,7 @@ public class ItemService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
 
-        return convertToDto(item);
+        return convertToItemDto(item);
     }
 
     public ItemDto updateItem(long itemId, ItemDto updateItemDto, MemberDto memberDto) {
@@ -92,7 +92,7 @@ public class ItemService {
             item.setImageUrl(updateItemDto.getImageUrl());
 
             itemRepository.save(item);
-            return convertToDto(item);
+            return convertToItemDto(item);
         } else {
             throw new RuntimeException("상품을 수정할 권한이 없습니다.");
         }

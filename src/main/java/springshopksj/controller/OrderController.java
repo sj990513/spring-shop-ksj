@@ -77,7 +77,7 @@ public class OrderController {
      * {
      *     "orderItems": [
      *         {
-     *             "itemId": 3,
+     *             "itemID": 3,
      *             "count": 3
      *         }
      *     ]

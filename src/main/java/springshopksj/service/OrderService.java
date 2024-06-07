@@ -3,6 +3,8 @@ package springshopksj.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import springshopksj.dto.*;
 import springshopksj.entity.*;
@@ -104,6 +106,7 @@ public class OrderService {
 
         // 장바구니에 아이템 추가
         for (OrderItemDto orderItemDto : orderItems) {
+
             Item item = itemRepository.findById(orderItemDto.getItemID())
                     .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
 
@@ -299,18 +302,6 @@ public class OrderService {
         return orderDto;
     }
 
-
-    // 특정 주문 조회 (관리자페이지에서 사용)
-    public OrderDto getOrderById(Long orderId) {
-
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
-
-        OrderDto orderDto = convertToOrderDto(order);
-
-        return  orderDto;
-    }
-
     // userId로 order찾기
     public List<OrderDto> getOrdersByUserId(MemberDto memberDto) {
 
@@ -327,7 +318,7 @@ public class OrderService {
         return orderDtos;
     }
 
-    // orderId로 모든 order 디테일 찾기 (order, orderItems, payment, delivery)
+    // orderId로 모든 order 디테일 찾기 - 주문상세보기 (order, orderItems, payment, delivery)
     public OrderRequest findOrderDetailByOrderId(MemberDto memberDto, long orderId) {
 
         String message = "주문에 해당하는 상세정보를 찾을수 없습니다.";
@@ -357,8 +348,63 @@ public class OrderService {
         return orderRequest;
     }
 
+    //모든 order 조회 - 페이징처리
+    public Page<OrderDto> findAllOrders(Pageable pageable) {
 
+        Page<Order> allOrders = orderRepository.findAll(pageable);
 
+        return allOrders.map(this::convertToOrderDto);
+    }
+
+    // order status별 조회 - 페이징 처리
+    public Page<OrderDto> findByStatus(String status, Pageable pageable) {
+
+        Order.OrderStatus orderStatus;
+
+        switch (status) {
+            case "ordered":
+                orderStatus = Order.OrderStatus.ORDERED;
+                break;
+
+            case "paid":
+                orderStatus = Order.OrderStatus.PAID;
+                break;
+
+            case "cancle":
+                orderStatus = Order.OrderStatus.CANCEL;
+                break;
+
+            case "cancelled":
+                orderStatus = Order.OrderStatus.CANCELLED;
+                break;
+
+            case "shipped":
+                orderStatus = Order.OrderStatus.SHIPPED;
+                break;
+
+            case "delivered":
+                orderStatus = Order.OrderStatus.DELIVERED;
+                break;
+
+            default:
+                orderStatus = Order.OrderStatus.ORDERED;
+        }
+
+        Page<Order> findByCategory = orderRepository.findByStatus(orderStatus, pageable);
+
+        return findByCategory.map(this::convertToOrderDto);
+    }
+
+    // 특정 주문 조회 (관리자페이지에서 사용)
+    public OrderDto getOrderById(Long orderId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+
+        OrderDto orderDto = convertToOrderDto(order);
+
+        return  orderDto;
+    }
 
 
     // order캔슬 (사용자가 요청)
@@ -369,11 +415,11 @@ public class OrderService {
         if (order.getStatus() != Order.OrderStatus.ORDERED) {
             throw new RuntimeException("주문 취소가 불가능합니다.");
         }
-        order.setStatus(Order.OrderStatus.CANCELLED);
+        order.setStatus(Order.OrderStatus.CANCEL);
         orderRepository.save(order);
     }
 
-    // (관리자가) 캔슬된 오더 허용후 삭제처리
+    //  캔슬된 오더 허용후 삭제처리 - 관리자
     public void acceptCancelOrder(long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
@@ -382,7 +428,7 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("주문에 해당하는 배송정보를 찾을수 없습니다."));
 
         // 취소된 주문이랑, 배송전 상품만 취소허용 가능
-        if (order.getStatus() != Order.OrderStatus.CANCELLED && delivery.getStatus() != Delivery.DeliveryStatus.READY) {
+        if (order.getStatus() != Order.OrderStatus.CANCEL && delivery.getStatus() != Delivery.DeliveryStatus.READY) {
             throw new RuntimeException("주문 취소가 불가능합니다.");
         }
 
@@ -397,9 +443,14 @@ public class OrderService {
             item.setStock(item.getStock() + orderItem.getCount());
             itemRepository.save(item);
         }
+        
+        // 주문, 배송 취소로 변경
+        order.setStatus(Order.OrderStatus.CANCELLED);
+        delivery.setStatus(Delivery.DeliveryStatus.CANCELLED);
 
-        // 주문삭제
-        orderRepository.delete(order);
+        // 취소된 주문 저장
+        orderRepository.save(order);
+        deliveryRepository.save(delivery);
 
     }
 

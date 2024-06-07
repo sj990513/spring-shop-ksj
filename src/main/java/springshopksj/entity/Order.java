@@ -33,6 +33,7 @@ public class Order {
         PENDING,     // 뵤류중 (장바구니)
         ORDERED,     // 주문 완료
         PAID,        // 결제 완료
+        CANCEL,      // 주문 취소 요청
         CANCELLED,   // 주문 취소
         SHIPPED,     // 배송 중
         DELIVERED    // 배송 완료
