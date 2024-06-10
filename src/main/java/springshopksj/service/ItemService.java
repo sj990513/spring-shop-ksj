@@ -10,10 +10,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import springshopksj.dto.ItemDto;
 import springshopksj.dto.MemberDto;
-import springshopksj.entity.Item;
-import springshopksj.entity.Member;
+import springshopksj.dto.ReviewDto;
+import springshopksj.entity.*;
 import springshopksj.repository.ItemRepository;
 import springshopksj.repository.MemberRepository;
+import springshopksj.repository.OrderRepository;
+import springshopksj.repository.ReviewRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +28,8 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final MemberRepository memberRepository;
+    private final ReviewRepository reviewRepository;
+    private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
 
 
@@ -34,6 +38,13 @@ public class ItemService {
         ItemDto itemDto = modelMapper.map(item, ItemDto.class);
         itemDto.setUserID(item.getMember().getID());
         return itemDto;
+    }
+
+    private ReviewDto convertToReviewDto(Review review) {
+        ReviewDto reviewDto = modelMapper.map(review, ReviewDto.class);
+        reviewDto.setItemID(review.getItem().getID());
+        reviewDto.setUserID(review.getMember().getID());
+        return reviewDto;
     }
 
     //모든 아이템 조회 (페이징 처리)
@@ -76,6 +87,37 @@ public class ItemService {
 
         return convertToItemDto(item);
     }
+
+    // 리뷰추가 - 상품이 배송완료 상태에 해당되는 상품만 리뷰작성가능
+    public ReviewDto addReview(MemberDto memberDto, long itemId, ReviewDto reviewDto) {
+
+        Member member = memberRepository.findById(memberDto.getID())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
+
+
+        List<OrderItem> orderItems = orderRepository.findDeliveredOrderItemsByMemberAndItem(member.getID(), itemId);
+
+        // 배송완료된 상품만 리뷰작성가능
+        if (orderItems.isEmpty()) {
+            throw new RuntimeException("리뷰를 작성할 권한이 없습니다. 상품이 배송 완료 상태가 아닙니다.");
+        }
+
+
+        Review review = Review.builder()
+                .comment(reviewDto.getComment())
+                .rating(reviewDto.getRating())
+                .item(item)
+                .member(member)
+                .build();
+
+        reviewRepository.save(review);
+
+        return convertToReviewDto(review);
+    }
+
 
     public ItemDto updateItem(long itemId, ItemDto updateItemDto, MemberDto memberDto) {
         Item item = itemRepository.findById(itemId)

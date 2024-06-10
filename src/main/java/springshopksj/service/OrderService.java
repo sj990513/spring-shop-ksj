@@ -11,6 +11,7 @@ import springshopksj.entity.*;
 import springshopksj.repository.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -104,6 +105,8 @@ public class OrderService {
             orderRepository.save(order);
         }
 
+        long totalprice = order.getTotalprice();
+
         // 장바구니에 아이템 추가
         for (OrderItemDto orderItemDto : orderItems) {
 
@@ -121,8 +124,13 @@ public class OrderService {
                     .count(orderItemDto.getCount())
                     .build();
 
+            totalprice += (orderItem.getCount() * orderItem.getOrderprice());
+
             orderItemRepository.save(orderItem);
         }
+
+        order.setTotalprice(totalprice);
+        orderRepository.save(order);
 
         List<OrderItem> cart = orderItemRepository.findByOrderID(order.getID());
         List<OrderItemDto> cartDto = cart.stream().map(this::convertToOrderItemDto).collect(Collectors.toList());
@@ -134,6 +142,8 @@ public class OrderService {
     public List<OrderItemDto> deleteCartItem(MemberDto memberDto, long order_itemID) {
 
 
+        int deleteprice = 0;
+        
         // 장바구니 탐색
         Order order = orderRepository.findByMemberIDAndStatus(memberDto.getID(), Order.OrderStatus.PENDING)
                 .orElse(null);
@@ -155,6 +165,12 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
 
         orderItemRepository.delete(orderItem);
+
+        // 장바구니 가격 조정
+        deleteprice = orderItem.getCount() * orderItem.getOrderprice();
+        order.setTotalprice(order.getTotalprice() - deleteprice);
+        orderRepository.save(order);
+
         
         List<OrderItem> cart = orderItemRepository.findByOrderID(order.getID());
         List<OrderItemDto> cartDto = cart.stream().map(this::convertToOrderItemDto).collect(Collectors.toList());
@@ -178,7 +194,7 @@ public class OrderService {
 
     
     // 장바구니에서 결제
-    public OrderDto createOrderFromCart(MemberDto memberDto, DeliveryDto deliveryDto, PaymentDto paymentDto) {
+    public OrderDto createOrderFromCart(MemberDto memberDto, DeliveryDto deliveryDto) {
         
         // 주문 요청한 사용자 (현재 로그인한 사용자)
         Member member = memberRepository.findById(memberDto.getID())
@@ -217,16 +233,6 @@ public class OrderService {
                 .build();
         deliveryRepository.save(delivery);
 
-        // 결제 정보 생성
-        Payment payment = Payment.builder()
-                .order(order)
-                .paymentmethod(paymentDto.getPaymentMethod())
-                .amount(paymentDto.getAmount())
-                .paymentdate(LocalDateTime.now())
-                .build();
-
-        paymentRepository.save(payment);
-
         // 주문완료로 상태 업데이트
         order.setStatus(Order.OrderStatus.ORDERED);
         orderRepository.save(order);
@@ -236,27 +242,18 @@ public class OrderService {
         return orderDto;
     }
 
-
-
     // 아이템 디테일에서 개별주문(즉시주문) 생성
-    public OrderDto createOrder(MemberDto memberDto, List<OrderItemDto> orderItems, DeliveryDto deliveryDto, PaymentDto paymentDto) {
-
+    public OrderDto createOrder(MemberDto memberDto, List<OrderItemDto> orderItems, DeliveryDto deliveryDto) {
 
         // 주문 요청한 사용자 (현재 로그인한 사용자)
         Member member = memberRepository.findById(memberDto.getID())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
 
-        // 주문 데이터 생성
-        Order order = Order.builder()
-                .member(member)
-                .status(Order.OrderStatus.ORDERED)
-                .orderdate(LocalDateTime.now())
-                .build();
+        long totalprice = 0;
 
-        orderRepository.save(order);
+        // 재고 확인 및 총 가격 계산
+        List<OrderItem> orderItemList = new ArrayList<>();
 
-
-        // 주문 항목 생성 및 재고 업데이트
         for (OrderItemDto orderItemDto : orderItems) {
             Item item = itemRepository.findById(orderItemDto.getItemID())
                     .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
@@ -266,15 +263,32 @@ public class OrderService {
             }
 
             OrderItem orderItem = OrderItem.builder()
-                    .order(order)
                     .item(item)
                     .orderprice(item.getPrice())
                     .count(orderItemDto.getCount())
                     .build();
 
+            orderItemList.add(orderItem);
+            totalprice += (orderItem.getCount() * orderItem.getOrderprice());
+        }
+
+        // 모든 검사가 통과된 후 주문 데이터 생성
+        Order order = Order.builder()
+                .member(member)
+                .status(Order.OrderStatus.ORDERED)
+                .orderdate(LocalDateTime.now())
+                .totalprice(totalprice)
+                .build();
+
+        orderRepository.save(order);
+
+        // 주문 항목 생성 및 재고 업데이트
+        for (OrderItem orderItem : orderItemList) {
+            orderItem.setOrder(order);
             orderItemRepository.save(orderItem);
 
-            item.setStock(item.getStock() - orderItemDto.getCount());
+            Item item = orderItem.getItem();
+            item.setStock(item.getStock() - orderItem.getCount());
             itemRepository.save(item);
         }
 
@@ -287,6 +301,24 @@ public class OrderService {
 
         deliveryRepository.save(delivery);
 
+        OrderDto orderDto = convertToOrderDto(order);
+
+        return orderDto;
+    }
+
+    // 결제
+    public PaymentDto createPayment(long orderId, PaymentDto paymentDto) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("해당 주문을 찾을수 없습니다."));;
+
+        if (order.getTotalprice() != paymentDto.getAmount())
+            throw new RuntimeException("결제 금액이 일치하지 않습니다.");
+        
+        //주문상태일때만 결제가능
+        if (!order.getStatus().equals(Order.OrderStatus.ORDERED))
+            throw new RuntimeException("결제 가능한 상태가 아닙니다.");
+
         // 결제 정보 생성
         Payment payment = Payment.builder()
                 .order(order)
@@ -294,28 +326,25 @@ public class OrderService {
                 .amount(paymentDto.getAmount())
                 .paymentdate(LocalDateTime.now())
                 .build();
+        
+        // 결제완료로 변경
+        order.setStatus(Order.OrderStatus.PAID);
+        orderRepository.save(order);
 
         paymentRepository.save(payment);
 
-        OrderDto orderDto = convertToOrderDto(order);
+        PaymentDto updatePaymentDto = convertToPaymentDto(payment);
 
-        return orderDto;
+        return updatePaymentDto;
     }
 
+
     // userId로 order찾기
-    public List<OrderDto> getOrdersByUserId(MemberDto memberDto) {
+    public Page<OrderDto> getOrdersByUserId(MemberDto memberDto, Pageable pageable) {
 
-        List<Order> orders = orderRepository.findByMemberID(memberDto.getID());
+        Page<Order> orders = orderRepository.findByMemberID(memberDto.getID(), pageable);
 
-        List<OrderDto> orderDtos = orders.stream().map(order -> {
-                    OrderDto orderDto = modelMapper.map(order, OrderDto.class);
-                    orderDto.setUserID(order.getMember().getID());
-                    return orderDto;
-                })
-                .collect(Collectors.toList());
-
-
-        return orderDtos;
+        return orders.map(this::convertToOrderDto);
     }
 
     // orderId로 모든 order 디테일 찾기 - 주문상세보기 (order, orderItems, payment, delivery)
@@ -412,6 +441,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
 
+        // 결제전 주문 상태때맨 취소가능
         if (order.getStatus() != Order.OrderStatus.ORDERED) {
             throw new RuntimeException("주문 취소가 불가능합니다.");
         }
@@ -419,62 +449,66 @@ public class OrderService {
         orderRepository.save(order);
     }
 
-    //  캔슬된 오더 허용후 삭제처리 - 관리자
-    public void acceptCancelOrder(long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
+    // order status 업데이트 status : CANCELLED, SHIPPED, DELIVERED (3가지만허용), - 관리자
+    public OrderDto updateOrderStatus(long orderId, Order.OrderStatus status) {
 
-        Delivery delivery = deliveryRepository.findByOrderID(orderId)
-                .orElseThrow(() -> new RuntimeException("주문에 해당하는 배송정보를 찾을수 없습니다."));
-
-        // 취소된 주문이랑, 배송전 상품만 취소허용 가능
-        if (order.getStatus() != Order.OrderStatus.CANCEL && delivery.getStatus() != Delivery.DeliveryStatus.READY) {
-            throw new RuntimeException("주문 취소가 불가능합니다.");
-        }
-
-        List<OrderItem> orderItems = orderItemRepository.findByOrderID(orderId);
-
-
-        for(OrderItem orderItem : orderItems) {
-            Item item = itemRepository.findById(orderItem.getItem().getID())
-                    .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
-
-            // 재고복구
-            item.setStock(item.getStock() + orderItem.getCount());
-            itemRepository.save(item);
-        }
-        
-        // 주문, 배송 취소로 변경
-        order.setStatus(Order.OrderStatus.CANCELLED);
-        delivery.setStatus(Delivery.DeliveryStatus.CANCELLED);
-
-        // 취소된 주문 저장
-        orderRepository.save(order);
-        deliveryRepository.save(delivery);
-
-    }
-
-    // order status 업데이트
-    public void updateOrderStatus(long orderId, Order.OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("해당하는 주문을 찾을수 없습니다."));
 
         Delivery delivery = deliveryRepository.findByOrderID(orderId)
                 .orElseThrow(() -> new RuntimeException("해당하는 배송정보를 찾을수 없습니다."));
 
-        // 배송중으로 들어오면 delivery도 같이 배송중으로 변경
-        if(status.equals(Order.OrderStatus.SHIPPED)) {
-            delivery.setStatus(Delivery.DeliveryStatus.SHIPPED);
-            deliveryRepository.save(delivery);
+
+        // 주문취소허용 들어오면 delivery도 같이 주문취소로 변경 (order상태 CANCLE일때만 허용)
+        if (status.equals(Order.OrderStatus.CANCELLED)) {
+
+            // 취소된 주문이 아니거나, 배송전 상품이 아니면 취소 불가능
+            if ( !order.getStatus().equals(Order.OrderStatus.CANCEL) || !delivery.getStatus().equals(Delivery.DeliveryStatus.READY)) {
+                throw new RuntimeException("주문 취소가 불가능합니다.");
+            }
+
+            List<OrderItem> orderItems = orderItemRepository.findByOrderID(orderId);
+
+            for (OrderItem orderItem : orderItems) {
+                Item item = itemRepository.findById(orderItem.getItem().getID())
+                        .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
+
+                // 재고복구
+                item.setStock(item.getStock() + orderItem.getCount());
+                itemRepository.save(item);
+
+            }
+            // 배송 취소로 변경
+            delivery.setStatus(Delivery.DeliveryStatus.CANCELLED);
         }
 
-        // 배송완료로 들어오면 delivery도 같이 배송완료로 변경
-        if(status.equals(Order.OrderStatus.DELIVERED)) {
-            delivery.setStatus(Delivery.DeliveryStatus.DELIVERED);
-            deliveryRepository.save(delivery);
+        // 배송중으로 들어오면 delivery도 같이 배송중으로 변경 (order상태 PAID일때만 허용)
+        else if (status.equals(Order.OrderStatus.SHIPPED)) {
+            if (order.getStatus().equals(Order.OrderStatus.PAID)) {
+                delivery.setStatus(Delivery.DeliveryStatus.SHIPPED);
+            } else {
+                throw new RuntimeException("결제가 완료되지 않았습니다. 결제확인후 배송이 가능합니다.");
+            }
+        }
+
+        // 배송완료로 들어오면 delivery도 같이 배송완료로 변경 (order상태 SHIPPED일때만 허용)
+        else if (status.equals(Order.OrderStatus.DELIVERED)) {
+            if (order.getStatus().equals(Order.OrderStatus.SHIPPED)) {
+                delivery.setStatus(Delivery.DeliveryStatus.DELIVERED);
+            } else {
+                throw new RuntimeException("배송중인 상품이 아닙니다.");
+            }
+        }
+
+        else {
+            throw new RuntimeException("허용되지 않는 상태변경입니다.");
         }
 
         order.setStatus(status);
+
         orderRepository.save(order);
+        deliveryRepository.save(delivery);
+
+        return convertToOrderDto(order);
     }
 }

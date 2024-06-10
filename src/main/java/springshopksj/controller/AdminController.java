@@ -54,8 +54,8 @@ public class AdminController {
      *     "role": "ROLE_ADMIN"
      * }
      */
-    @PatchMapping("/member-list/{userId}/update-status")
-    public ResponseEntity<?> updateMemberStatus(@PathVariable(name = "userId") long userId, @RequestBody MemberDto memberDto) {
+    @PatchMapping("/member-list/{userId}/update-role")
+    public ResponseEntity<?> updateMemberRole(@PathVariable(name = "userId") long userId, @RequestBody MemberDto memberDto) {
 
         MemberDto updateMemberDto = memberService.updateRole(userId, memberDto);
 
@@ -142,33 +142,23 @@ public class AdminController {
     }
 
 
-    // 캔슬된 오더 허용 - 관리자
-    /**
-     * http://localhost:8080/admin/order-list/3/accept-cancle
-     */
-    @PatchMapping("/order-list/{orderId}/accept-cancle")
-    public ResponseEntity<?> acceptCancleOrder(@PathVariable(name="orderId") Long orderId) {
-        orderService.acceptCancelOrder(orderId);
-
-        return new ResponseEntity<>("주문 취소 완료", HttpStatus.OK);
-
-    }
-
     // 주문상태 업데이트 ex) 배송중 -> 배송완료 - 관리자
     /**
-     * http://localhost:8080/admin/orders/3/update-status
+     * http://localhost:8080/admin/order-list/3/update-status
      * orderDto
      * {
-     *  "status" : "ORDERED"
+     *  "status" : "SHIPPED"
      * }
      *
-     * status : ORDERED, PAID, CANCLE, CANCELLED, SHIPPED, DELIVERED
+     * status : CANCELLED, SHIPPED, DELIVERED (3가지만허용),
      */
     @PatchMapping("/order-list/{orderId}/update-status")
     public ResponseEntity<?> updateOrderStatus(@PathVariable(name="orderId") Long orderId,
                                                @RequestBody OrderDto orderDto) {
-        orderService.updateOrderStatus(orderId, orderDto.getStatus());
-        return new ResponseEntity<>("변경완료", HttpStatus.OK);
+
+        OrderDto updateOrderDto = orderService.updateOrderStatus(orderId, orderDto.getStatus());
+
+        return new ResponseEntity<>(updateOrderDto, HttpStatus.OK);
     }
 
     // 전체 배달정보 조회

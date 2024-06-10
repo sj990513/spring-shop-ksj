@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import springshopksj.dto.ItemDto;
 import springshopksj.dto.MemberDto;
+import springshopksj.dto.ReviewDto;
 import springshopksj.service.ItemService;
 import springshopksj.service.MemberService;
 import springshopksj.utils.Constants;
@@ -104,6 +105,35 @@ public class ItemController {
 
         return new ResponseEntity<>(findItem, HttpStatus.OK);
     }
+
+    // 상품 리뷰 생성 (배송완료 제품만 리뷰 가능)
+    /**
+     * http://localhost:8080/items/3/add-review
+     *
+     * reviewDto
+     * {
+     *     "rating": 5,
+     *     "comment": "example12345"
+     * }
+     */
+    @PostMapping("/{itemId}/add-review")
+    public ResponseEntity<?> addReview(@PathVariable(name = "itemId") long itemId,
+                                       @RequestBody ReviewDto reviewDto) {
+
+        //로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        ReviewDto review = itemService.addReview(memberDto, itemId, reviewDto);
+
+        return new ResponseEntity<>(review, HttpStatus.OK);
+    }
+
+    // 리뷰삭제 로직 구현 - 리뷰 작성자 본인 + 관리자 삭제가능하게, admincontroller에도 리뷰삭제 추가
+    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 
     // 아이템 수정 - 로그인필요
     /**

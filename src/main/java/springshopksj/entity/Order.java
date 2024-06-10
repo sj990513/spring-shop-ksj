@@ -23,9 +23,12 @@ public class Order {
     @CreatedDate
     private LocalDateTime orderdate;
 
+    private long totalprice;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userID", referencedColumnName = "ID")
     private Member member;
+
 
     // 기타 주문 정보 필드
     public enum OrderStatus {

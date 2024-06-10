@@ -4,6 +4,8 @@ package springshopksj.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.weaver.ast.Or;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,6 +16,7 @@ import springshopksj.entity.Order;
 import springshopksj.entity.OrderItem;
 import springshopksj.service.MemberService;
 import springshopksj.service.OrderService;
+import springshopksj.utils.Constants;
 
 import java.util.List;
 
@@ -25,13 +28,17 @@ public class OrderController {
     private final OrderService orderService;
     private final MemberService memberService;
 
-    // 로그인한 사용자 주문내역 조회 - 사용자
+
+    // 로그인한 사용자 전체 주문내역 페이징 조회 - 사용자
     @GetMapping
-    public ResponseEntity<?> getUserOrders() {
+    public ResponseEntity<?> getUserOrders(@RequestParam(value = "page", defaultValue = "1") int page) {
 
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        List<OrderDto> orders = orderService.getOrdersByUserId(memberDto);
+        PageRequest pageable = PageRequest.of(page-1 , Constants.PAGE_SIZE);
+
+        Page<OrderDto> orders = orderService.getOrdersByUserId(memberDto, pageable);
+
         return new ResponseEntity<>(orders, HttpStatus.OK);
     }
 
@@ -81,6 +88,7 @@ public class OrderController {
      *             "count": 3
      *         }
      *     ]
+     * }
      */
     @PostMapping("/cart/add-cart")
     public ResponseEntity<?> createCart(@RequestBody OrderRequest orderRequest) {
@@ -126,10 +134,6 @@ public class OrderController {
      * {
      *     "deliveryDto": {
      *         "address": "example korea 1234"
-     *     },
-     *     "paymentDto": {
-     *         "paymentMethod": "CREDIT_CARD",
-     *         "amount": 300
      *     }
      * }
      */
@@ -138,7 +142,7 @@ public class OrderController {
         //로그인중인 사용자
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        OrderDto orderDto  = orderService.createOrderFromCart(memberDto, orderRequest.getDeliveryDto(), orderRequest.getPaymentDto());
+        OrderDto orderDto  = orderService.createOrderFromCart(memberDto, orderRequest.getDeliveryDto());
 
         return new ResponseEntity<>(orderDto, HttpStatus.OK);
     }
@@ -152,14 +156,10 @@ public class OrderController {
      *         {
      *             "itemID": 3,
      *             "count": 3
-     *         },
+     *         }
      *     ],
      *     "deliveryDto": {
      *         "address": "123 Main St, Anytown, USA"
-     *     },
-     *     "paymentDto": {
-     *         "paymentMethod": "CREDIT_CARD",
-     *         "amount": 300
      *     }
      * }
      */
@@ -168,9 +168,29 @@ public class OrderController {
 
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        OrderDto orderDto = orderService.createOrder(memberDto, orderRequest.getOrderItems(), orderRequest.getDeliveryDto(), orderRequest.getPaymentDto());
+        OrderDto orderDto = orderService.createOrder(memberDto, orderRequest.getOrderItems(), orderRequest.getDeliveryDto());
 
         return new ResponseEntity<>(orderDto, HttpStatus.OK);
     }
+
+    // 결제
+    /**
+     * orderRequest
+     *       {
+     *           "paymentDto": {
+     *               "paymentMethod": "CREDIT_CARD",
+     *               "amount": 60000
+     *           }
+     *       }
+     */
+    @PostMapping("/{orderId}/payment")
+    public ResponseEntity<?> payment(@PathVariable(name="orderId") Long orderId,
+                                     @RequestBody OrderRequest orderRequest) {
+
+        PaymentDto paymentDto = orderService.createPayment(orderId, orderRequest.getPaymentDto());
+
+        return new ResponseEntity<>(paymentDto, HttpStatus.OK);
+    }
+
     //주문 검증 및 예외처리
 }

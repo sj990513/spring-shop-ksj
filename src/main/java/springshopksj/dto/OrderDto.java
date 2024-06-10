@@ -14,5 +14,6 @@ public class OrderDto {
     private long id;
     private Order.OrderStatus status;
     private LocalDateTime orderDate;
+    private long totalprice;
     private long userID;
 }
