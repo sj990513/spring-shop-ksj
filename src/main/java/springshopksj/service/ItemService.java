@@ -8,9 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import springshopksj.dto.ItemDto;
-import springshopksj.dto.MemberDto;
-import springshopksj.dto.ReviewDto;
+import springshopksj.dto.*;
 import springshopksj.entity.*;
 import springshopksj.repository.ItemRepository;
 import springshopksj.repository.MemberRepository;
@@ -20,6 +18,7 @@ import springshopksj.repository.ReviewRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,12 +79,30 @@ public class ItemService {
     }
 
     // itemId로 아이템값 찾기
-    public ItemDto findById(long itemId) {
+    public ItemDetailDto findItemDetail(long itemId) {
 
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
 
-        return convertToItemDto(item);
+        ItemDto itemDto = convertToItemDto(item);
+
+        List<Review> reviewList = reviewRepository.findByItemID(itemId);
+        List<ReviewDto> reviewListDto = reviewList.stream().map(this::convertToReviewDto).collect(Collectors.toList());
+
+        ItemDetailDto itemDetailDto = ItemDetailDto.builder()
+                .itemDto(itemDto)
+                .reviewListDto(reviewListDto)
+                .build();
+
+        return itemDetailDto;
+    }
+
+    // 상품에 대한 모든 리뷰
+    public Page<ReviewDto> findAllReview(long itemId, Pageable pageable) {
+
+        Page<Review> findReviews = reviewRepository.findByItemID(itemId, pageable);
+
+        return findReviews.map(this::convertToReviewDto);
     }
 
     // 리뷰추가 - 상품이 배송완료 상태에 해당되는 상품만 리뷰작성가능
@@ -116,6 +133,30 @@ public class ItemService {
         reviewRepository.save(review);
 
         return convertToReviewDto(review);
+    }
+
+    // 리뷰 삭제 - 리뷰 작성자 본인 + 관리자 삭제가능
+    public String deleteReview(MemberDto memberDto, long itemId, long reviewId) {
+
+        Member member = memberRepository.findById(memberDto.getID())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
+
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("리뷰를 찾을수 없습니다."));
+
+        String message;
+
+        // 상품에 대한 리뷰여야되고, 본인이 작성한 리뷰여야되거나 관리자일경우 삭제가능
+        if ( (review.getItem().getID() == item.getID() && review.getMember().getID() == member.getID()) || member.getRole().equals(Member.Role.ROLE_ADMIN)) {
+            reviewRepository.delete(review);
+            message = "삭제성공";
+        } else  {
+            message = "해당 리뷰를 삭제할 권한이 없습니다.";
+        }
+        return  message;
     }
 
 

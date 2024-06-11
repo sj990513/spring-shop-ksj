@@ -85,7 +85,7 @@ public class AdminController {
         return new ResponseEntity<>(allItemList, HttpStatus.OK);
     }
 
-    //아이템삭제
+    // 아이템삭제
     @DeleteMapping("/item-list/{itemId}/delete-item")
     public ResponseEntity<?> deleteItem(@PathVariable(name = "itemId") long itemId) {
 
@@ -95,6 +95,24 @@ public class AdminController {
         String message = itemService.deleteItem(itemId, memberDto);
 
         if(message.equals("삭제성공"))
+            return new ResponseEntity<>(message, HttpStatus.OK);
+
+        return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
+    }
+
+    // 리뷰 삭제
+    /**
+     * http://localhost:8080/items/3/review/6/delete-review
+     */
+    @DeleteMapping("/item-list/{itemId}/review/{reviewId}/delete-review")
+    ResponseEntity<?> deleteReview(@PathVariable(name = "itemId") long itemId,
+                                   @PathVariable(name = "reviewId") long reviewId) {
+        //로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        String message = itemService.deleteReview(memberDto, itemId, reviewId);
+
+        if (message.equals("삭제성공"))
             return new ResponseEntity<>(message, HttpStatus.OK);
 
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);

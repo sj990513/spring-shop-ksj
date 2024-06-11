@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import springshopksj.dto.ItemDetailDto;
 import springshopksj.dto.ItemDto;
 import springshopksj.dto.MemberDto;
 import springshopksj.dto.ReviewDto;
@@ -94,21 +95,37 @@ public class ItemController {
     }
 
 
-    //아이템 상세보기 - 로그인필요
+    //아이템 상세보기 - 로그인필요, 리뷰 리스트도 추가해서 전달
     /**
      * http://localhost:8080/items/3
      */
     @GetMapping("/{itemId}")
     public ResponseEntity<?> itemDetail(@PathVariable(name = "itemId") long itemId) {
 
-        ItemDto findItem = itemService.findById(itemId);
+        ItemDetailDto itemDetailDto = itemService.findItemDetail(itemId);
 
-        return new ResponseEntity<>(findItem, HttpStatus.OK);
+        return new ResponseEntity<>(itemDetailDto, HttpStatus.OK);
+    }
+
+    // 상품에 대한 모든 리뷰
+    /**
+     * http://localhost:8080/items/3/review
+     */
+    @GetMapping("/{itemId}/review")
+    public ResponseEntity<?> itemReview(@PathVariable(name = "itemId") long itemId,
+                                        @RequestParam(value = "page", defaultValue = "1") int page) {
+
+        PageRequest pageable = PageRequest.of(page-1 , Constants.PAGE_SIZE);
+
+
+        Page<ReviewDto> allReview = itemService.findAllReview(itemId, pageable);
+
+        return new ResponseEntity<>(allReview, HttpStatus.OK);
     }
 
     // 상품 리뷰 생성 (배송완료 제품만 리뷰 가능)
     /**
-     * http://localhost:8080/items/3/add-review
+     * http://localhost:8080/items/3/review/add-review
      *
      * reviewDto
      * {
@@ -116,7 +133,7 @@ public class ItemController {
      *     "comment": "example12345"
      * }
      */
-    @PostMapping("/{itemId}/add-review")
+    @PostMapping("/{itemId}/review/add-review")
     public ResponseEntity<?> addReview(@PathVariable(name = "itemId") long itemId,
                                        @RequestBody ReviewDto reviewDto) {
 
@@ -128,12 +145,24 @@ public class ItemController {
         return new ResponseEntity<>(review, HttpStatus.OK);
     }
 
-    // 리뷰삭제 로직 구현 - 리뷰 작성자 본인 + 관리자 삭제가능하게, admincontroller에도 리뷰삭제 추가
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+    // 리뷰삭제 - 리뷰 작성자 본인 + 관리자 삭제가능하게, admincontroller에도 리뷰삭제 추가
+    /**
+     * http://localhost:8080/items/3/review/6/delete-review
+     */
+    @DeleteMapping("/{itemId}/review/{reviewId}/delete-review")
+    ResponseEntity<?> deleteReview(@PathVariable(name = "itemId") long itemId,
+                                   @PathVariable(name = "reviewId") long reviewId) {
+        //로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        String message = itemService.deleteReview(memberDto, itemId, reviewId);
+
+        if (message.equals("삭제성공"))
+            return new ResponseEntity<>(message, HttpStatus.OK);
+
+        return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
+    }
 
     // 아이템 수정 - 로그인필요
     /**
