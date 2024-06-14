@@ -10,10 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import springshopksj.dto.*;
 import springshopksj.entity.*;
-import springshopksj.repository.ItemRepository;
-import springshopksj.repository.MemberRepository;
-import springshopksj.repository.OrderRepository;
-import springshopksj.repository.ReviewRepository;
+import springshopksj.repository.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,13 +23,14 @@ import java.util.stream.Collectors;
 public class ItemService {
 
     private final ItemRepository itemRepository;
-    private final MemberRepository memberRepository;
     private final ReviewRepository reviewRepository;
+    private final QnaRepository qnaRepository;
+    private final QnaAnswerRepository qnaAnswerRepository;
+    private final MemberRepository memberRepository;
     private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
 
 
-    //itemDto맵핑위한  메소드(userId부분)
     private ItemDto convertToItemDto(Item item) {
         ItemDto itemDto = modelMapper.map(item, ItemDto.class);
         itemDto.setUserID(item.getMember().getID());
@@ -44,6 +42,19 @@ public class ItemService {
         reviewDto.setItemID(review.getItem().getID());
         reviewDto.setUserID(review.getMember().getID());
         return reviewDto;
+    }
+
+    private QnaDto convertToQnaDto(Qna qna) {
+        QnaDto qnaDto = modelMapper.map(qna, QnaDto.class);
+        qnaDto.setItemID(qna.getItem().getID());
+        qnaDto.setUserID(qna.getMember().getID());
+        return qnaDto;
+    }
+
+    private QnaAnswerDto convertToQnaAnswerDto(QnaAnswer qnaAnswer) {
+        QnaAnswerDto qnaAnswerDto = modelMapper.map(qnaAnswer, QnaAnswerDto.class);
+        qnaAnswerDto.setQnaID(qnaAnswer.getQna().getID());
+        return qnaAnswerDto;
     }
 
     //모든 아이템 조회 (페이징 처리)
@@ -97,7 +108,7 @@ public class ItemService {
         return itemDetailDto;
     }
 
-    // 상품에 대한 모든 리뷰
+    // 상품에 대한 모든 리뷰 - 페이징
     public Page<ReviewDto> findAllReview(long itemId, Pageable pageable) {
 
         Page<Review> findReviews = reviewRepository.findByItemID(itemId, pageable);
@@ -159,7 +170,76 @@ public class ItemService {
         return  message;
     }
 
+    // 상품에 대한 모든 qna와 qna_answer 리스트 - 페이징
+    public Page<QnaResponse> getQnaResponses(long itemId, Pageable pageable) {
+        Page<Qna> qnaPage = qnaRepository.findByItemID(itemId, pageable);
 
+        return qnaPage.map(qna -> {
+            QnaDto qnaDto = convertToQnaDto(qna);
+            QnaAnswer qnaAnswer = qnaAnswerRepository.findByQnaID(qna.getID());
+            QnaAnswerDto qnaAnswerDto = null;
+
+            if (qnaAnswer != null) {
+                qnaAnswerDto = convertToQnaAnswerDto(qnaAnswer);
+            }
+
+            return new QnaResponse(qnaDto, qnaAnswerDto);
+        });
+    }
+
+
+    // qna등록
+    public QnaDto addQna(QnaDto qnaDto, long itemId, MemberDto memberDto) {
+
+        Member member = memberRepository.findById(memberDto.getID())
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을수 없습니다."));
+
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));
+
+        Qna qna = Qna.builder()
+                .title(qnaDto.getTitle())
+                .content(qnaDto.getContent())
+                .createdate(LocalDateTime.now())
+                .item(item)
+                .member(member)
+                .build();
+
+        qnaRepository.save(qna);
+
+        return convertToQnaDto(qna);
+    }
+
+    // qna 답변 등록 - 관리자만 가능, 답변은 qna당 하나만
+    public QnaAnswerDto addQnaAnswer(QnaAnswerDto qnaAnswerDto, long itemId, long qnaId) {
+
+        Qna qna = qnaRepository.findById(qnaId)
+                .orElseThrow(() -> new RuntimeException("QnA를 찾을수 없습니다."));
+
+        //qnaId가 item에 대한 qnaId인지 판별
+        if (!(qna.getItem().getID() == itemId)) {
+            throw new RuntimeException("QnA가 해당 상품에 대한 것이 아닙니다.");
+        }
+
+        Optional<QnaAnswer> findQna = qnaAnswerRepository.findOptionalByQnaID(qnaId);
+        // 이미 답변이 존재할시
+        if ( !findQna.isEmpty() )
+            throw new RuntimeException("이미 질문에 대한 답변이 존재합니다.");
+
+
+        QnaAnswer qnaAnswer = QnaAnswer.builder()
+                .answer(qnaAnswerDto.getAnswer())
+                .createdate(LocalDateTime.now())
+                .qna(qna)
+                .build();
+
+        qnaAnswerRepository.save(qnaAnswer);
+        
+        return convertToQnaAnswerDto(qnaAnswer);
+    }
+
+
+    // 아이템 수정
     public ItemDto updateItem(long itemId, ItemDto updateItemDto, MemberDto memberDto) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new RuntimeException("상품을 찾을수 없습니다."));

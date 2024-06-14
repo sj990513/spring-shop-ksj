@@ -3,7 +3,6 @@ package springshopksj.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -15,8 +14,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-@Table(name ="board")
-public class Board {
+@Table(name ="qna")
+public class Qna {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long ID;
@@ -31,9 +30,9 @@ public class Board {
     @Column(name = "createdate")
     private LocalDateTime createdate;
 
-    @LastModifiedDate
-    @Column(name = "modifydate")
-    private LocalDateTime modifydate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "itemID", referencedColumnName = "ID")
+    private Item item;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "userID", referencedColumnName = "ID")

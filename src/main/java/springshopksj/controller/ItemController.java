@@ -8,10 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springshopksj.dto.ItemDetailDto;
-import springshopksj.dto.ItemDto;
-import springshopksj.dto.MemberDto;
-import springshopksj.dto.ReviewDto;
+import springshopksj.dto.*;
 import springshopksj.service.ItemService;
 import springshopksj.service.MemberService;
 import springshopksj.utils.Constants;
@@ -163,6 +160,47 @@ public class ItemController {
 
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
     }
+
+
+    // 상품에 대한 모든 qna - (qna답변 존재할시 qna답변도 같이 출력)
+    /**
+     * http://localhost:8080/items/3/qna
+     */
+    @GetMapping("/{itemId}/qna")
+    public ResponseEntity<?> getQnaList(@PathVariable(name = "itemId") long itemId,
+                                        @RequestParam(value = "page", defaultValue = "1") int page) {
+
+        PageRequest pageable = PageRequest.of(page-1 , Constants.PAGE_SIZE);
+
+        Page<QnaResponse> qnaResponses = itemService.getQnaResponses(itemId, pageable);
+
+        return new ResponseEntity<>(qnaResponses, HttpStatus.OK);
+    }
+
+    // 상품에 대한 qna 등록
+    /**
+     * http://localhost:8080/items/3/qna/add-qna
+     *
+     * qnaDto
+     *{
+     *     "title": "example title",
+     *     "content": "example content"
+     * }
+     */
+    @PostMapping("/{itemId}/qna/add-qna")
+    public ResponseEntity<?> addQna(@PathVariable(name = "itemId") long itemId,
+                                    @RequestBody QnaDto qnaDto) {
+
+        //로그인중인 사용자
+        MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+
+        QnaDto saveQnaDto = itemService.addQna(qnaDto, itemId, memberDto);
+
+        return new ResponseEntity<>(saveQnaDto, HttpStatus.OK);
+    }
+
+
+
 
     // 아이템 수정 - 로그인필요
     /**

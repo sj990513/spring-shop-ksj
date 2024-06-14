@@ -8,11 +8,11 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class BoardDto {
+public class QnaDto {
     private long ID;
     private String title;
     private String content;
     private LocalDateTime createdate;
-    private LocalDateTime modifydate;
+    private long itemID;
     private long userID;
 }

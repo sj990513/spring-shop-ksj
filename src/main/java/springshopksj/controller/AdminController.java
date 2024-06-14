@@ -8,10 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import springshopksj.dto.DeliveryDto;
-import springshopksj.dto.ItemDto;
-import springshopksj.dto.MemberDto;
-import springshopksj.dto.OrderDto;
+import springshopksj.dto.*;
+import springshopksj.entity.QnaAnswer;
 import springshopksj.service.DeliveryService;
 import springshopksj.service.ItemService;
 import springshopksj.service.MemberService;
@@ -30,9 +28,12 @@ public class AdminController {
     private final DeliveryService deliveryService;
 
     //모든 멤버조회
+    /**
+     * http://localhost:8080/admin/member-list
+     */
     @GetMapping("/member-list")
     public ResponseEntity<?> allMemberList(@RequestParam(value = "page", defaultValue = "1") int page,
-                                   @RequestParam(value = "search", required = false) String search) {
+                                           @RequestParam(value = "search", required = false) String search) {
 
         PageRequest pageable = PageRequest.of(page-1 , Constants.PAGE_SIZE);
 
@@ -86,6 +87,9 @@ public class AdminController {
     }
 
     // 아이템삭제
+    /**
+     * http://localhost:8080/admin/item-list/3/delete-item
+     */
     @DeleteMapping("/item-list/{itemId}/delete-item")
     public ResponseEntity<?> deleteItem(@PathVariable(name = "itemId") long itemId) {
 
@@ -102,7 +106,7 @@ public class AdminController {
 
     // 리뷰 삭제
     /**
-     * http://localhost:8080/items/3/review/6/delete-review
+     * http://localhost:8080/admin/item-list/3/review/3/delete-review
      */
     @DeleteMapping("/item-list/{itemId}/review/{reviewId}/delete-review")
     ResponseEntity<?> deleteReview(@PathVariable(name = "itemId") long itemId,
@@ -118,6 +122,40 @@ public class AdminController {
         return new ResponseEntity<>(message, HttpStatus.UNAUTHORIZED);
     }
 
+    // 상품에 대한 qna 조회
+    /**
+     * http://localhost:8080/admin/item-list/3/qna
+     */
+    @GetMapping("/item-list/{itemId}/qna")
+    public ResponseEntity<?> itemQna(@RequestParam(value = "page", defaultValue = "1") int page,
+                                     @PathVariable(name = "itemId") long itemId) {
+
+        PageRequest pageable = PageRequest.of(page-1 , Constants.PAGE_SIZE);
+
+        Page<QnaResponse> qnaResponses = itemService.getQnaResponses(itemId, pageable);
+
+        return new ResponseEntity<>(qnaResponses, HttpStatus.OK);
+    }
+
+
+    // 특정 qna 답글쓰기
+    /**
+     * http://localhost:8080/admin/item-list/3/qna/3/answer-qna
+     *
+     * qnaDto
+     *{
+     *     "answer": "example answer"
+     * }
+     */
+    @PostMapping("/item-list/{itemId}/qna/{qnaId}/answer-qna")
+    public ResponseEntity<?> addQna(@PathVariable(name = "itemId") long itemId,
+                                    @PathVariable(name = "qnaId") long qnaId,
+                                    @RequestBody QnaAnswerDto qnaAnswerDto) {
+
+        QnaAnswerDto answerDto = itemService.addQnaAnswer(qnaAnswerDto, itemId, qnaId);
+
+        return new ResponseEntity<>(answerDto, HttpStatus.OK);
+    }
 
     // 전체 주문조회
     @GetMapping("/order-list")

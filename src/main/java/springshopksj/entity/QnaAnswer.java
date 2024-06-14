@@ -1,6 +1,5 @@
 package springshopksj.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -11,30 +10,23 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @Setter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-@Table(name ="basket")
-public class Basket {
-
+@Table(name ="qna_answer")
+public class QnaAnswer {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long ID;
 
-    @Column(name = "quantity")
-    private int quantity;
+    @Column(name ="answer", columnDefinition = "TEXT")
+    private String answer;
 
     @CreatedDate
     @Column(name = "createdate")
     private LocalDateTime createdate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "userID", referencedColumnName = "ID")
-    private Member member;
-
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "itemID", referencedColumnName = "ID")
-    private Item item;
-
+    @JoinColumn(name = "qnaID", referencedColumnName = "ID")
+    private Qna qna;
 }

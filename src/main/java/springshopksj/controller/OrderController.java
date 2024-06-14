@@ -51,9 +51,9 @@ public class OrderController {
 
         MemberDto memberDto = memberService.fidnByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
 
-        OrderRequest orderRequest = orderService.findOrderDetailByOrderId(memberDto, orderId);
+        OrderResponse orderResponse = orderService.findOrderDetailByOrderId(memberDto, orderId);
 
-        return new ResponseEntity<>(orderRequest, HttpStatus.OK);
+        return new ResponseEntity<>(orderResponse, HttpStatus.OK);
     }
 
     // 주문취소 - 사용자

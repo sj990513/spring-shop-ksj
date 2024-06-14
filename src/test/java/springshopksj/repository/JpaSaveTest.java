@@ -5,8 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import springshopksj.entity.Basket;
-import springshopksj.entity.Board;
+import springshopksj.entity.Qna;
 import springshopksj.entity.Item;
 import springshopksj.entity.Member;
 
@@ -23,9 +22,7 @@ public class JpaSaveTest {
     @Autowired
     private ItemRepository itemRepository;
     @Autowired
-    private BasketRepository basketRepository;
-    @Autowired
-    private BoardRepository boardRepository;
+    private QnaRepository qnaRepository;
 
     @BeforeEach
     void 기본데이터삽입() {
@@ -60,7 +57,7 @@ public class JpaSaveTest {
         memberRepository.save(member3);
 
         Item item1 = Item.builder()
-                .itemName("item1")
+                .itemname("item1")
                 .price(10000)
                 .stock(50)
                 .category("옷")
@@ -71,21 +68,13 @@ public class JpaSaveTest {
                 .build();
         itemRepository.save(item1);
 
-        Board board1 = Board.builder()
+        Qna qna1 = Qna.builder()
                 .content("가나다라마바사아자차")
                 .title("member2가쓴제목")
                 .member(member2)
                 .build();
 
-        boardRepository.save(board1);
-
-        Basket basket1 = Basket.builder()
-                .createdate(LocalDateTime.now())
-                .quantity(10000)
-                .item(item1)
-                .member(member1)
-                .build();
-        basketRepository.save(basket1);
+        qnaRepository.save(qna1);
 
     }
     
@@ -113,7 +102,7 @@ public class JpaSaveTest {
 
         for(Item i : items) {
             String formattedCreateDate = i.getCreateDate().format(formatter);
-            log.info("i.getItemName() = " + i.getItemName()
+            log.info("i.getItemName() = " + i.getItemname()
                     + "\ni.getCreateDate() = " + i.getCreateDate()
                     + "\ni.getStock() = " + i.getStock()
                     + "\ni.getUserID() = " + i.getMember().getID());
@@ -125,17 +114,17 @@ public class JpaSaveTest {
 
         Thread.sleep(3000);
 
-        Board board = boardRepository.findAll().get(0);
+        Qna qna = qnaRepository.findAll().get(0);
 
-        board = board.toBuilder().title("제목을 이거로바꾸겠다").build();
-        boardRepository.save(board);
+        qna = qna.toBuilder().title("제목을 이거로바꾸겠다").build();
+        qnaRepository.save(qna);
 
 
-        List<Board> boards = boardRepository.findAll();
+        List<Qna> qnas = qnaRepository.findAll();
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-        for(Board b : boards) {
+        for(Qna b : qnas) {
             String formattedCreateDate = b.getCreatedate().format(formatter);
             String formattedModifyDate = b.getModifydate().format(formatter);
             log.info("b.getID() = " + b.getID()
@@ -145,23 +134,6 @@ public class JpaSaveTest {
                     + "\nb.getTitle() = " + b.getTitle()
                     + "\n만든날짜 = " + formattedCreateDate
                     + "\n수정날짜 = " + formattedModifyDate);
-        }
-    }
-
-    @Test
-    void 장바구니테스트() {
-
-        List<Basket> baskets = basketRepository.findAll();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-        for(Basket b : baskets) {
-            String formattedCreateDate = b.getCreatedate().format(formatter);
-            log.info("b.getID() = " + b.getID()
-                    + "\nb.getCreatedate() = " + b.getCreatedate()
-                    + "\nb.getMember().getID() = " + b.getMember().getID()
-                    + "\nb.getItem().getId() = " + b.getItem().getId()
-                    + "\nb.getQuantity() = " + b.getQuantity()
-                    + "\nformattedCreateDate = " + formattedCreateDate);
         }
     }
 }

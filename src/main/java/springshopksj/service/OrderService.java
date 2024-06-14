@@ -348,7 +348,7 @@ public class OrderService {
     }
 
     // orderId로 모든 order 디테일 찾기 - 주문상세보기 (order, orderItems, payment, delivery)
-    public OrderRequest findOrderDetailByOrderId(MemberDto memberDto, long orderId) {
+    public OrderResponse findOrderDetailByOrderId(MemberDto memberDto, long orderId) {
 
         String message = "주문에 해당하는 상세정보를 찾을수 없습니다.";
 
@@ -367,14 +367,14 @@ public class OrderService {
         Delivery delivery = deliveryRepository.findByOrderID(orderId)
                 .orElseThrow(() -> new RuntimeException(message));
 
-        OrderRequest orderRequest = OrderRequest.builder()
+        OrderResponse orderResponse = OrderResponse.builder()
                 .orderDto(convertToOrderDto(order))
                 .orderItems(orderItems.stream().map(this::convertToOrderItemDto).collect(Collectors.toList()))
                 .paymentDto(convertToPaymentDto(payment))
                 .deliveryDto(convertToDeliveryDto(delivery))
                 .build();
 
-        return orderRequest;
+        return orderResponse;
     }
 
     //모든 order 조회 - 페이징처리
