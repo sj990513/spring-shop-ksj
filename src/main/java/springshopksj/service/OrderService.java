@@ -369,7 +369,7 @@ public class OrderService {
 
         OrderResponse orderResponse = OrderResponse.builder()
                 .orderDto(convertToOrderDto(order))
-                .orderItems(orderItems.stream().map(this::convertToOrderItemDto).collect(Collectors.toList()))
+                .orderItemDtos(orderItems.stream().map(this::convertToOrderItemDto).collect(Collectors.toList()))
                 .paymentDto(convertToPaymentDto(payment))
                 .deliveryDto(convertToDeliveryDto(delivery))
                 .build();
@@ -422,6 +422,14 @@ public class OrderService {
         Page<Order> findByCategory = orderRepository.findByStatus(orderStatus, pageable);
 
         return findByCategory.map(this::convertToOrderDto);
+    }
+
+    // order status별 조회 - 페이징 처리 x - 관리자페이지에서 사용
+    public List<OrderDto> findByStatusList(Order.OrderStatus status) {
+
+        List<Order> findByCategory = orderRepository.findByStatus(status);
+
+        return findByCategory.stream().map(this::convertToOrderDto).collect(Collectors.toList());
     }
 
     // 특정 주문 조회 (관리자페이지에서 사용)

@@ -9,12 +9,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import springshopksj.dto.*;
+import springshopksj.entity.Order;
 import springshopksj.entity.QnaAnswer;
 import springshopksj.service.DeliveryService;
 import springshopksj.service.ItemService;
 import springshopksj.service.MemberService;
 import springshopksj.service.OrderService;
 import springshopksj.utils.Constants;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,6 +29,25 @@ public class AdminController {
     private final OrderService orderService;
     private final ItemService itemService;
     private final DeliveryService deliveryService;
+
+    //관리자 페이지 메인 - 최근 가입한 회원 10명, 입금후 배송대기중인 주문들 리스트
+    @GetMapping
+    public ResponseEntity<?> amdinMain() {
+
+        // 최근 가입한 회원 10명
+        List<MemberDto> recentJoinMember = memberService.recentJoinMember();
+
+        // 배송 대기중인 주문 리스트 (PAID 상태)
+        List<OrderDto> paidOrderList = orderService.findByStatusList(Order.OrderStatus.PAID);
+
+        AdminResponse adminResponse = AdminResponse.builder()
+                .memberDtos(recentJoinMember)
+                .orderDtos(paidOrderList)
+                .build();
+
+        return new ResponseEntity<>(adminResponse, HttpStatus.OK);
+    }
+
 
     //모든 멤버조회
     /**

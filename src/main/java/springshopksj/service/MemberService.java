@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import springshopksj.dto.CustomUserDetails;
 import springshopksj.dto.ItemDto;
 import springshopksj.dto.MemberDto;
+import springshopksj.dto.ReviewDto;
 import springshopksj.entity.Item;
 import springshopksj.entity.Member;
 import springshopksj.repository.MemberRepository;
@@ -100,6 +101,16 @@ public class MemberService {
         Page<Member> findBySearch = memberRepository.findByUsernameContaining(keyword, pageable);
 
         return findBySearch.map(member -> modelMapper.map(member, MemberDto.class));
+    }
+
+    // 최근 가입한 회원 10명
+    public List<MemberDto> recentJoinMember() {
+
+        List<Member> recentMembers = memberRepository.findRecentMembers();
+
+        return recentMembers.stream()
+                .map(member -> modelMapper.map(member, MemberDto.class))
+                .collect(Collectors.toList());
     }
 
 

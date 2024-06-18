@@ -3,6 +3,7 @@ package springshopksj.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import springshopksj.entity.Item;
 import springshopksj.entity.Member;
@@ -24,4 +25,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> { //extend
     Boolean existsByPhone(String phone);
     Optional<Member> findByUsername(String username);
 
+    @Query("SELECT m FROM Member m ORDER BY m.createDate DESC")
+    List<Member> findRecentMembers();
 }

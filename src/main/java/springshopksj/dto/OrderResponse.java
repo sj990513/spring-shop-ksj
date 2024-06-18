@@ -11,7 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 public class OrderResponse {
     private OrderDto orderDto;
-    private List<OrderItemDto> orderItems;
+    private List<OrderItemDto> orderItemDtos;
     private DeliveryDto deliveryDto;
     private PaymentDto paymentDto;
 }

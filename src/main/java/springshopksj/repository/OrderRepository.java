@@ -19,7 +19,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByMemberIDAndStatus(long userID, Order.OrderStatus status);
 
+    // 페이징
     Page<Order> findByStatus(Order.OrderStatus status, Pageable pageable);
+
+    // 페이징x
+    List<Order> findByStatus(Order.OrderStatus status);
 
     // 배송완료된 상품만 리뷰작성가능, jpql사용하니 별칭사용
     @Query("SELECT oi FROM OrderItem oi WHERE oi.item.ID = :itemID AND oi.order.ID IN " +

@@ -200,8 +200,6 @@ public class ItemController {
     }
 
 
-
-
     // 아이템 수정 - 로그인필요
     /**
      * http://localhost:8080/items/3/update
