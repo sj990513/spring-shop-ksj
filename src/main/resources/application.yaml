@@ -2,9 +2,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/shopdb?serverTimezone=Asia/Seoul
-    username: root
-    password: Rlatjswo159874!
+    url: example
+    username: example
+    password: example
 
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
@@ -15,9 +15,9 @@ spring:
         format_sql: true
 
   jwt:
-    secret: XoCDqZb7Tuu3opTfeC6KCChldQSRl6WxJBHG89uzNNU=
+    secret: example
 
 
 
 server:
-  port: 8080
+  port: example
