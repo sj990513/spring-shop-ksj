@@ -32,7 +32,6 @@ public class AdminController {
 
     //카카오페이 결제 만들기
     
-    
     //관리자 페이지 메인 - 최근 가입한 회원 10명, 입금후 배송대기중인 주문들 리스트
     @GetMapping
     public ResponseEntity<?> amdinMain() {
