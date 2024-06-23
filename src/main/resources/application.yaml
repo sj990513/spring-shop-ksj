@@ -1,0 +1,24 @@
+#실제 서비스용 db
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/shopdb?serverTimezone=Asia/Seoul
+    username: root
+    password: Rlatjswo159874!
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    properties:
+      hibernate:
+        show_sql: none
+        ddl-auto: none #ddl비허용 서비스용db는 직접관리
+        format_sql: true
+
+  jwt:
+    secret: XoCDqZb7Tuu3opTfeC6KCChldQSRl6WxJBHG89uzNNU=
+
+
+
+server:
+  port: 8080
+
